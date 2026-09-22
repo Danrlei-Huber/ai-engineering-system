@@ -26,7 +26,7 @@ entry `{name, agent, started_at, finished_at, outcome}` as each state finishes.
 | BACKEND      | ai-engineering-system:backend       | architecture-plan (+ review-result when reworking)            | implementation-result | always → TESTER                                                    |
 | TESTER       | ai-engineering-system:tester        | architecture-plan, implementation-result                      | test-result         | always → REVIEWER                                                    |
 | REVIEWER     | ai-engineering-system:reviewer      | feature, architecture-plan, test-result, diff scope           | review-result       | always → DECIDE                                                      |
-| DECIDE       | none                                | review-result                                                 | —                   | APPROVE → DONE; CHANGES and rework_count < 2 → BACKEND (rework_count += 1); CHANGES and rework_count == 2 → DONE with status "needs human" |
+| DECIDE       | none                                | review-result                                                 | —                   | APPROVE → DONE; CHANGES and rework_count < 2 → BACKEND (rework_count += 1); CHANGES and rework_count == 2 → DONE with status "needs-human" |
 | DONE         | none                                | all contracts                                                 | summary, run record | —                                                                    |
 
 ## Rules per state
