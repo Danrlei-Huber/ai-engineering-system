@@ -1,0 +1,13 @@
+{
+  "name": "ai-engineering-local",
+  "description": "Local marketplace for ai-engineering-system plugin.",
+  "owner": { "name": "Jose Azocar" },
+  "plugins": [
+    {
+      "name": "ai-engineering-system",
+      "description": "Versioned engineering process for Claude Code.",
+      "version": "0.1.0",
+      "source": "."
+    }
+  ]
+}

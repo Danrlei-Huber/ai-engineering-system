@@ -1,0 +1,8 @@
+{
+  "name": "ai-engineering-system",
+  "version": "0.1.0",
+  "description": "Versioned engineering process for Claude Code: role agents, orchestrating workflows, deterministic guardrails and a read-only knowledge base.",
+  "author": { "name": "Jose Azocar" },
+  "license": "MIT",
+  "skills": ["./skills/workflows", "./skills/rules"]
+}
