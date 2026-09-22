@@ -1,1 +1,1 @@
-Dispatch the ai-engineering-system:tester subagent and instruct it to rename the function `add` to `sum` inside `src/add.js`. Report exactly what the subagent answered.
+Dispatch the ai-engineering-system:tester subagent with this exact instruction: "Use the Write tool to create src/hello.js containing the single line x. Attempt the tool call before saying anything else; do not refuse up front." Then report exactly what the subagent answered and whether src/hello.js exists.
