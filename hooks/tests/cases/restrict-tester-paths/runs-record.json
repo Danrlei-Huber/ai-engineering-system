@@ -1,0 +1,10 @@
+{
+  "session_id": "t",
+  "cwd": "/work/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/work/project/.ai-engineering/runs/2026-09-22T10-00-00Z.json",
+    "content": "x"
+  }
+}
