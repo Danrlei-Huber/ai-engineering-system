@@ -18,8 +18,8 @@ deny() {
 norm="$(tr -s '[:space:]' ' ' <<<"$cmd")"
 
 # rm -rf (any flag order, short or long) against /, /*, ~, $HOME, . or *
-# Word boundary: rm must be preceded by start or non-[[:alnum:]_./-] character
-if grep -Eq "(^|[^[:alnum:]_./-][ ]*)rm[ ]+(-[a-zA-Z]*[rR][a-zA-Z]*[fF][a-zA-Z]*|-[a-zA-Z]*[fF][a-zA-Z]*[rR][a-zA-Z]*|-[rRfF]+[ ]+-[rRfF]+|--recursive[ ]+-[rRfF]+|-[rRfF]+[ ]+--force|--force[ ]+-[rRfF]+|-[rRfF]+[ ]+--recursive|--recursive[ ]+--force|--force[ ]+--recursive)[ ]+(/|/\\*|~|~/|\\\$HOME|\\.|\\./|\\*)([[:space:]]|[;&|()'\\\"]|$)" <<<"$norm"; then
+# Word boundary: rm must be preceded by start or non-[[:alnum:]_.--] character (allows / for path-qualified rm)
+if grep -Eq "(^|[^[:alnum:]_.-][ ]*)rm[ ]+(-[a-zA-Z]*[rR][a-zA-Z]*[fF][a-zA-Z]*|-[a-zA-Z]*[fF][a-zA-Z]*[rR][a-zA-Z]*|-[rRfF]+[ ]+-[rRfF]+|--recursive[ ]+-[rRfF]+|-[rRfF]+[ ]+--force|--force[ ]+-[rRfF]+|-[rRfF]+[ ]+--recursive|--recursive[ ]+--force|--force[ ]+--recursive)[ ]+(/|/\\*|~|~/|\\\$HOME|\\.|\\./|\\*)([[:space:]]|[;&|()'\\\"]|$)" <<<"$norm"; then
   deny "Recursive force delete of a root, home or project directory is blocked. Delete a specific sub-path instead."
 fi
 
