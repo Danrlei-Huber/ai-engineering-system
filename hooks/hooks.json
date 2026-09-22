@@ -8,6 +8,12 @@
         ]
       },
       {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/restrict-tester-bash.sh\"", "timeout": 10 }
+        ]
+      },
+      {
         "matcher": "Edit|Write|MultiEdit|Read",
         "hooks": [
           { "type": "command", "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/scripts/block-secrets.sh\"", "timeout": 10 }
