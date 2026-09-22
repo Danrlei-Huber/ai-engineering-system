@@ -10,7 +10,7 @@ This repository IS a Claude Code plugin. The root is the plugin root.
 ## Commands
 - Validate plugin: `claude plugin validate . --strict`
 - Hook tests: `bash hooks/tests/run.sh`
-- Lint hooks: `shellcheck hooks/scripts/*.sh hooks/tests/run.sh`
+- Lint hooks: `shellcheck hooks/scripts/*.sh hooks/tests/run.sh evals/*/scaffold.sh`
 - RAG tests: `cd rag && npm test`
 - Evals (costs tokens): `claude plugin eval . --scaffold --trust-plugin --ablation none --threshold 0.8 --allow-tools Bash Write Edit`
 - Dev loop in another project: `claude --plugin-dir /path/to/ai-engineering-system`

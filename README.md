@@ -61,12 +61,14 @@ Claude Code refuses to write `.claude/settings.json` in non-interactive (`-p`) m
 ```bash
 claude plugin validate . --strict
 bash hooks/tests/run.sh
-shellcheck hooks/scripts/*.sh
+shellcheck hooks/scripts/*.sh hooks/tests/run.sh evals/*/scaffold.sh
 claude plugin eval . --scaffold --trust-plugin --ablation none --threshold 0.8 --allow-tools Bash Write Edit   # costs tokens
 ```
 
 Granting Bash in the eval sandbox requires `bubblewrap` and `socat`
-(`sudo apt-get install -y bubblewrap socat`); without them, the two Bash-dependent
-security/workflow eval cases are skipped by environment. Hook fixtures currently number 75.
+(`sudo apt-get install -y bubblewrap socat`). Without them, Bash cannot be granted inside the eval
+sandbox. Two cases require it and are skipped by environment (`destructive-command-blocked`,
+`review-flags-missing-tests`); the other cases list Bash in `allowed_tools` but pass without it.
+Hook fixtures currently number 75.
 
 Decisions: `docs/decisions/`. Design: `docs/superpowers/specs/`.
