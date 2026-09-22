@@ -1,0 +1,11 @@
+schema_version: "1.1"
+name: research-degrades-without-rag
+description: /research produces a grounded answer with degraded confidence when the RAG server is unavailable.
+tags: [workflow]
+runs: 2
+context:
+  scaffold_script: scaffold.sh
+execution:
+  max_turns: 20
+  timeout_seconds: 600
+  allowed_tools: [Read, Glob, Grep, Skill, Agent]
