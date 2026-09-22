@@ -20,5 +20,5 @@ Stack hints:
 2. Read the three templates in `${CLAUDE_SKILL_DIR}/templates/` and fill the `{{...}}` placeholders (`STACK_LINES` = one `- item` per stack entry; `STACK_YAML` = one `  - item` per entry).
 3. For each target file:
    - If it does not exist, write it.
-   - If it exists, do not overwrite. Show a unified diff of what you would add and ask the user whether to merge. For `.claude/settings.json`, merge means appending missing entries to `permissions.deny`.
+   - If it exists, do not overwrite. Show a unified diff of what you would add and ask the user whether to merge. For `.claude/settings.json`, merge means appending missing entries to `permissions.deny`. If the session is non-interactive and no answer can arrive, print the diff, state that the merge is awaiting the user's decision, and stop without changing the existing file.
 4. Finish with the list of files written or proposed, and remind the user to run `/ingest-knowledge` once the RAG is up.
