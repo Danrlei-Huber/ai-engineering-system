@@ -1,0 +1,10 @@
+{
+  "session_id": "t",
+  "cwd": "/work/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/work/project/src/add.js",
+    "content": "export const add = (a, b) => a + b;"
+  }
+}

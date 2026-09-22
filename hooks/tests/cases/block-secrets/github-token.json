@@ -1,0 +1,11 @@
+{
+  "session_id": "t",
+  "cwd": "/work/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Edit",
+  "tool_input": {
+    "file_path": "/work/project/ci.yml",
+    "old_string": "x",
+    "new_string": "token: ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij"
+  }
+}
