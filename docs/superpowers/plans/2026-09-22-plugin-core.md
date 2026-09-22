@@ -18,7 +18,7 @@
 - Skills live in `skills/workflows/<name>/SKILL.md` and `skills/rules/<name>/SKILL.md`; the manifest declares both directories under `skills`.
 - Rule skills carry `user-invocable: false` and explicit `name: rules-<topic>`.
 - Workflow skills carry `disable-model-invocation: true`.
-- Hook scripts depend only on `bash` and `jq`; every script is `set -euo pipefail` and passes `shellcheck`.
+- Hook scripts depend only on `bash`, `jq` and POSIX coreutils (grep, tr, basename); every script is `set -euo pipefail` and passes `shellcheck`.
 - A hook denies by printing `{"hookSpecificOutput":{"hookEventName":"PreToolUse","permissionDecision":"deny","permissionDecisionReason":"..."}}` and exiting 0; it allows by printing nothing and exiting 0.
 - Nobody who writes code reviews it; nobody who reviews writes code. Only `automation` has `mcp__n8n-mcp` tools. Only `research` and `architect` have `mcp__engineering-rag` tools.
 - Secrets never enter the repository. `.mcp.json` reads `N8N_API_KEY` from the environment.
