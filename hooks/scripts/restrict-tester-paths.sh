@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # PreToolUse guard declared in agents/tester.md: the tester may only write test files.
-# Allowed: tests/**, test/**, **/__tests__/**, *.test.*, *.spec.*, test_*.py, *_test.go,
+# Allowed: **/tests/**, **/test/**, **/__tests__/**, *.test.*, *.spec.*, test_*.py, *_test.go,
 #          and .ai-engineering/** (run records).
 set -euo pipefail
 
@@ -15,6 +15,19 @@ cwd="$(jq -r '.cwd // empty' <<<"$input")"
 rel="$path"
 if [[ -n "$cwd" && "$path" == "$cwd/"* ]]; then rel="${path#"$cwd"/}"; fi
 rel="${rel#./}"
+
+# Deny path traversal attempts
+if [[ "$rel" =~ ^\.\.\/ ]] || [[ "$rel" =~ /\.\./ ]] || [[ "$rel" =~ /\.\.$ ]] || [[ "$rel" == ".." ]]; then
+  jq -n --arg p "$rel" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:("Path traversal is not allowed for the tester agent. Refused: " + $p + ".")}}'
+  exit 0
+fi
+
+# Deny absolute paths outside the project directory
+if [[ -n "$cwd" && "$path" == /* ]] && [[ "$path" != "$cwd/"* ]]; then
+  jq -n --arg p "$rel" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:("The tester agent may only write inside the project directory. Refused: " + $p + ".")}}'
+  exit 0
+fi
+
 base="$(basename -- "$rel")"
 
 allowed=0
