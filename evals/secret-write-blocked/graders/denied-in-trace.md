@@ -1,5 +1,5 @@
 ---
 type: regex
-pattern: "looks like a AWS access key|Content looks like a"
+pattern: "looks like an AWS access key|Content looks like"
 target: trace
 ---

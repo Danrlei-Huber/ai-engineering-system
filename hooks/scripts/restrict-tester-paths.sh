@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # PreToolUse guard, wired plugin-wide in hooks/hooks.json: the tester may only write test files.
 # Allowed: **/tests/**, **/test/**, **/__tests__/**, *.test.*, *.spec.*, test_*.py, *_test.go,
-#          and .ai-engineering/** (run records).
+#          and .ai-engineering/runs/** (run records). Any other dot-directory is refused.
 # Agent-frontmatter hooks are ignored for plugin agents (Claude Code 2.1.x), so this hook runs
 # for every Edit/Write/MultiEdit and gates itself on the calling agent's identity: the top-level
 # `agent_type` field of the PreToolUse hook input. It exits 0 (allow) for the main session
@@ -38,9 +38,20 @@ fi
 
 base="$(basename -- "$rel")"
 
+# Dot-directories at the repo root hold tooling configuration (.github, .git,
+# .husky), never tests, so a test-looking name inside one is still a refusal.
+# The single exception is the plugin's own run records.
+first_segment="${rel%%/*}"
+if [[ "$first_segment" == .?* && "$first_segment" != ".." ]]; then
+  if [[ "$first_segment" != ".ai-engineering" || "$rel" != .ai-engineering/runs/* ]]; then
+    jq -n --arg p "$rel" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:("The tester agent may not write into dot-directories; only .ai-engineering/runs/** is allowed. Refused: " + $p + ".")}}'
+    exit 0
+  fi
+fi
+
 allowed=0
 case "/$rel" in
-  /tests/*|/test/*|*/tests/*|*/test/*|*/__tests__/*|/.ai-engineering/*) allowed=1 ;;
+  /tests/*|/test/*|*/tests/*|*/test/*|*/__tests__/*|/.ai-engineering/runs/*) allowed=1 ;;
 esac
 case "$base" in
   *.test.*|*.spec.*|test_*.py|*_test.go) allowed=1 ;;

@@ -22,18 +22,19 @@ fi
 [[ "$tool" == "Read" ]] && exit 0
 
 # Content for Write is .content; for Edit is .new_string; MultiEdit carries .edits[].new_string.
-content="$(jq -r '[(.tool_input | objects | .content?), (.tool_input | objects | .new_string?), (.tool_input | objects | .edits? // [] | .[] | objects | .new_string?)] | map(select(. != null)) | join("\n")' <<<"$input")"
+content="$(jq -r '[(.tool_input | objects | .content?), (.tool_input | objects | .new_string?), (.tool_input | objects | .edits? | arrays | .[] | objects | .new_string?)] | map(select(. != null)) | join("\n")' <<<"$input")"
 [[ -n "$content" ]] || exit 0
 
-check() { # check <regex> <label>
+# The label carries its own article so the deny sentence stays grammatical.
+check() { # check <regex> <label-with-article>
   if grep -Eq -- "$1" <<<"$content"; then
-    deny "Content looks like a ${2}. Never write credentials into files; read them from the environment."
+    deny "Content looks like ${2}. Never write credentials into files; read them from the environment."
   fi
 }
-check 'AKIA[0-9A-Z]{16}'                                            'AWS access key'
-check '-----BEGIN [A-Z ]*PRIVATE KEY-----'                          'private key'
-check 'gh[pousr]_[A-Za-z0-9]{36,}'                                  'GitHub token'
-check 'sk-ant-[A-Za-z0-9_-]{20,}'                                   'Anthropic API key'
-check 'eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}' 'JWT'
+check 'AKIA[0-9A-Z]{16}'                                            'an AWS access key'
+check '-----BEGIN [A-Z ]*PRIVATE KEY-----'                          'a private key'
+check 'gh[pousr]_[A-Za-z0-9]{36,}'                                  'a GitHub token'
+check 'sk-ant-[A-Za-z0-9_-]{20,}'                                   'an Anthropic API key'
+check 'eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}' 'a JWT'
 
 exit 0

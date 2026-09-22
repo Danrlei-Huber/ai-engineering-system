@@ -1,0 +1,10 @@
+{
+  "session_id": "t",
+  "cwd": "/work/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "MultiEdit",
+  "tool_input": {
+    "file_path": "/work/project/a.js",
+    "edits": "str"
+  }
+}

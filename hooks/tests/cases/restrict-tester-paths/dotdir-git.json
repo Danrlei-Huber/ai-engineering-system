@@ -1,0 +1,11 @@
+{
+  "session_id": "t",
+  "cwd": "/work/project",
+  "agent_type": "ai-engineering-system:tester",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/work/project/.git/hooks/x.test.sh",
+    "content": "x"
+  }
+}
