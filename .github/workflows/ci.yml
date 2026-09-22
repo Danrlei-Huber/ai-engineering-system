@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1" # weekly evals, Monday 06:00 UTC
+
+jobs:
+  hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y jq shellcheck
+      - run: shellcheck hooks/scripts/*.sh hooks/tests/run.sh evals/*/scaffold.sh
+      - run: bash hooks/tests/run.sh
+
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: claude plugin validate . --strict
+
+  evals:
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: sudo apt-get update && sudo apt-get install -y jq bubblewrap socat
+      - run: npm install -g @anthropic-ai/claude-code
+      - run: >
+          claude plugin eval . --scaffold --trust-plugin --ablation none
+          --threshold 0.8 --allow-tools Bash Write Edit --model claude-sonnet-5
+          --json results.json --no-publish
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: |
+            results.json
+            evals/results/**
