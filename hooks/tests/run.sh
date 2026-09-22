@@ -13,8 +13,16 @@ for fixture in cases/*/*.json; do
   expect_file="${fixture%.json}.expect"
   expected="$(tr -d '[:space:]' < "$expect_file")"
 
-  output="$(bash "$script" < "$fixture" 2>/dev/null || true)"
-  if [[ -z "$output" ]]; then
+  err_file="$(mktemp)"
+  rc=0
+  output="$(bash "$script" < "$fixture" 2>"$err_file")" || rc=$?
+  stderr="$(cat "$err_file")"
+  rm -f "$err_file"
+
+  if [[ "$rc" -ne 0 ]]; then
+    # A crashing hook script must never be reported as an allow.
+    got="crash(rc=${rc})"
+  elif [[ -z "$output" ]]; then
     got="allow"
   else
     got="$(printf '%s' "$output" | jq -r '.hookSpecificOutput.permissionDecision // "allow"')"
@@ -26,6 +34,7 @@ for fixture in cases/*/*.json; do
     fail=$((fail + 1))
     echo "FAIL ${fixture}: expected ${expected}, got ${got}"
     [[ -n "$output" ]] && echo "     output: ${output}"
+    [[ -n "$stderr" ]] && echo "     stderr: ${stderr}"
   fi
 done
 
