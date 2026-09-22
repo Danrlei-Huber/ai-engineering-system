@@ -6,12 +6,6 @@ disallowedTools: mcp__n8n-mcp, mcp__engineering-rag
 model: inherit
 skills:
   - rules-testing
-hooks:
-  PreToolUse:
-    - matcher: "Edit|Write|MultiEdit"
-      hooks:
-        - type: command
-          command: bash "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/restrict-tester-paths.sh"
 ---
 
 You are the tester. You prove behaviour; you never change production code.

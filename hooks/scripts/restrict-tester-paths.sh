@@ -1,12 +1,20 @@
 #!/usr/bin/env bash
-# PreToolUse guard declared in agents/tester.md: the tester may only write test files.
+# PreToolUse guard, wired plugin-wide in hooks/hooks.json: the tester may only write test files.
 # Allowed: **/tests/**, **/test/**, **/__tests__/**, *.test.*, *.spec.*, test_*.py, *_test.go,
 #          and .ai-engineering/** (run records).
+# Agent-frontmatter hooks are ignored for plugin agents (Claude Code 2.1.x), so this hook runs
+# for every Edit/Write/MultiEdit and gates itself on the calling agent's identity: the top-level
+# `agent_type` field of the PreToolUse hook input. It exits 0 (allow) for the main session
+# (no `agent_type`) and for any subagent that is not the tester, matching either the prefixed
+# form (`ai-engineering-system:tester`) or a bare `tester`.
 set -euo pipefail
 
 input="$(cat)"
 tool="$(jq -r '.tool_name // empty' <<<"$input")"
 case "$tool" in Edit|Write|MultiEdit) ;; *) exit 0 ;; esac
+
+agent_type="$(jq -r '.agent_type // empty' <<<"$input")"
+case "$agent_type" in tester|*:tester) ;; *) exit 0 ;; esac
 
 path="$(jq -r '(.tool_input | objects | .file_path) // empty' <<<"$input")"
 [[ -n "$path" ]] || exit 0
