@@ -17,13 +17,14 @@ deny() {
 # Collapse whitespace so patterns stay simple.
 norm="$(tr -s '[:space:]' ' ' <<<"$cmd")"
 
-# rm -rf (any flag order) against /, /*, ~, $HOME, . or *
-if grep -Eq "(^|[;&|] *|sudo +)rm +(-[a-zA-Z]*[rR][a-zA-Z]*[fF][a-zA-Z]*|-[a-zA-Z]*[fF][a-zA-Z]*[rR][a-zA-Z]*|-[rRfF]+ +-[rRfF]+) +(/|/\\*|~|~/|\\\$HOME|\\.|\\./|\\*)( |$)" <<<"$norm"; then
+# rm -rf (any flag order, short or long) against /, /*, ~, $HOME, . or *
+# Word boundary: rm must be preceded by start or non-[[:alnum:]_./-] character
+if grep -Eq "(^|[^[:alnum:]_./-][ ]*)rm[ ]+(-[a-zA-Z]*[rR][a-zA-Z]*[fF][a-zA-Z]*|-[a-zA-Z]*[fF][a-zA-Z]*[rR][a-zA-Z]*|-[rRfF]+[ ]+-[rRfF]+|--recursive[ ]+-[rRfF]+|-[rRfF]+[ ]+--force|--force[ ]+-[rRfF]+|-[rRfF]+[ ]+--recursive|--recursive[ ]+--force|--force[ ]+--recursive)[ ]+(/|/\\*|~|~/|\\\$HOME|\\.|\\./|\\*)([[:space:]]|[;&|()'\\\"]|$)" <<<"$norm"; then
   deny "Recursive force delete of a root, home or project directory is blocked. Delete a specific sub-path instead."
 fi
 
 # git push --force / -f to main or master (--force-with-lease is allowed)
-if grep -Eq 'git +push +.*(--force|-f)( |$)' <<<"$norm" && grep -Eq '( |/)(main|master)( |$)' <<<"$norm"; then
+if grep -Eq 'git +push +.*(--force|-f)( |$)' <<<"$norm" && grep -Eq '( |/)(main|master)( |[;&|]|$)' <<<"$norm"; then
   deny "Force push to main/master is blocked."
 fi
 
