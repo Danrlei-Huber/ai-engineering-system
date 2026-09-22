@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: npm install -g @anthropic-ai/claude-code
+      - run: npm install -g @anthropic-ai/claude-code@2.1.280
       - run: claude plugin validate . --strict
 
   evals:
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - run: sudo apt-get update && sudo apt-get install -y jq bubblewrap socat
-      - run: npm install -g @anthropic-ai/claude-code
+      - run: npm install -g @anthropic-ai/claude-code@2.1.280
       - run: >
           claude plugin eval . --scaffold --trust-plugin --ablation none
           --threshold 0.8 --allow-tools Bash Write Edit --model claude-sonnet-5

@@ -58,6 +58,7 @@ ai-engineering-system/
 │   ├── scripts/
 │   │   ├── block-destructive.sh
 │   │   ├── block-secrets.sh
+│   │   ├── restrict-tester-bash.sh
 │   │   ├── restrict-tester-paths.sh
 │   │   └── session-banner.sh
 │   └── tests/                   # bash runner + JSON fixtures
@@ -171,7 +172,8 @@ Bash scripts with `jq` as the only dependency. Denials return `hookSpecificOutpu
 |---|---|---|
 | block-destructive.sh | PreToolUse / Bash | `rm -rf` on `/`, `~`, `.`; `git push --force` to main/master; `git reset --hard`; `DROP TABLE|DATABASE`; `TRUNCATE`; `kubectl delete`; `terraform destroy`; `docker system prune` |
 | block-secrets.sh | PreToolUse / Edit, Write, Read | content matching AWS keys, `-----BEGIN PRIVATE KEY`, GitHub tokens, `sk-ant-`, JWTs; any write to `.env*` except `.env.example`; any read of `.env*` except `.env.example` |
-| restrict-tester-paths.sh | PreToolUse / Edit, Write (tester agent frontmatter only) | writes outside `tests/**`, `**/*.test.*`, `**/*.spec.*` |
+| restrict-tester-paths.sh | PreToolUse / Edit, Write, MultiEdit (plugin-level, applies only when `agent_type` is the tester) | writes outside `tests/**`, `**/*.test.*`, `**/*.spec.*`; any dot-directory other than `.ai-engineering/runs/**` |
+| restrict-tester-bash.sh | PreToolUse / Bash (plugin-level, applies only when `agent_type` is the tester) | file-writing shapes through the shell: output redirection, `tee`, `sed -i`, `mv`, `cp`, `patch`, `rm`, `truncate`, `dd`, `git checkout/restore/apply/stash` |
 | session-banner.sh | SessionStart | nothing; prints plugin version, warns if `rag/dist` is missing or the project lacks `.claude/settings.json` deny rules (suggests `/setup-project`) |
 
 ### 4.7 MCP wiring (`.mcp.json`)
@@ -329,6 +331,7 @@ Source-code ingestion; hybrid search and reranking; aggregation of `.ai-engineer
 - Existence of an official plugin validation command for the `plugin` CI job.
 - Whether `tools:` in agent frontmatter accepts permission-style patterns; if not, rely on `disallowedTools` plus hooks (already the design).
 - Ollama model auto-pull recipe in Compose (community pattern).
+- Reviewer Bash write boundary is prompt-only (follow-up).
 
 ## 11. Verified facts and sources (2026-09-22)
 

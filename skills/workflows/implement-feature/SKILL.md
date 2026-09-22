@@ -78,4 +78,6 @@ Create `.ai-engineering/runs/` if needed and write `<started_at with ":" replace
 }
 ```
 
+`files_changed` holds the `path` values from the last implementation-result.
+
 Never commit on the user's behalf inside this workflow; leave the working tree for them to review.

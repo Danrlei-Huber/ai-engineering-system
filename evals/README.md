@@ -4,7 +4,7 @@ Run all: `claude plugin eval . --scaffold --trust-plugin --ablation none --thres
 Run one: `claude plugin eval evals/<case>/case.yaml --scaffold --trust-plugin --ablation none --allow-tools Bash Write Edit`
 Tags: `workflow` (pipeline behaviour), `security` (hook enforcement).
 
-Hooks run outside the sandbox, so `security` results are advisory unless run in CI.
+Plugin hooks run inside `claude plugin eval` only when `--trust-plugin` is passed; without it the security cases fail. The `agent_type` hook-input field was verified on Claude Code 2.1.280 and must be re-verified on CLI upgrades.
 The RAG MCP server is not started in evals; `research-degrades-without-rag` relies on that.
 
 ## Requirements

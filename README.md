@@ -31,6 +31,9 @@ export N8N_API_URL=http://localhost:5678
 ```
 See `.env.example` for the RAG variables and `rag/README.md` for bringing the knowledge base up.
 
+`n8n-mcp` starts in every session and reports an MCP error at startup if `N8N_API_KEY` is unset;
+that is expected until the key is exported.
+
 ## Use in a project
 
 1. `/setup-project` writes `CLAUDE.md`, `.claude/settings.json` (deny rules) and `.ai-engineering/project.yaml`.
@@ -52,9 +55,15 @@ Claude Code refuses to write `.claude/settings.json` in non-interactive (`-p`) m
 
 - `rm -rf` on roots, force-push to main, `git reset --hard`, `DROP/TRUNCATE`, `kubectl delete`, `terraform destroy`, `docker system prune` are denied by hooks.
 - Writing credential-like content or touching `.env*` (except `.env.example`) is denied.
-- The tester agent can write only test paths. The reviewer and architect cannot edit. Only `automation` reaches n8n.
-- The tester restriction is a plugin-level hook that applies only when the calling subagent is
+- The tester agent can write only test paths through the Edit/Write/MultiEdit tools, and is
+  denied file-writing shapes through Bash (redirection, tee, sed -i, mv, cp, patch, rm, git
+  checkout/restore/apply/stash). Other Bash writes rely on the prompt and the reviewer.
+- The reviewer and architect cannot edit. Only `automation` reaches n8n.
+- Both tester restrictions are plugin-level hooks that apply only when the calling subagent is
   the tester; agent-frontmatter hooks are ignored for plugin agents in Claude Code 2.1.x.
+- The guards are conservative: commands that merely mention a destructive string are allowed only
+  for pure read-only utilities (`grep`, `rg`, `echo`, `printf`, `cat`, `head`, `tail`, `less`)
+  with no chaining, substitution or redirection; anything else mentioning them is denied.
 
 ## Develop this plugin
 
@@ -69,6 +78,5 @@ Granting Bash in the eval sandbox requires `bubblewrap` and `socat`
 (`sudo apt-get install -y bubblewrap socat`). Without them, Bash cannot be granted inside the eval
 sandbox. Two cases require it and are skipped by environment (`destructive-command-blocked`,
 `review-flags-missing-tests`); the other cases list Bash in `allowed_tools` but pass without it.
-Hook fixtures currently number 75.
 
 Decisions: `docs/decisions/`. Design: `docs/superpowers/specs/`.
