@@ -1,0 +1,6 @@
+project: {{PROJECT}}
+stack:
+{{STACK_YAML}}
+test_command: {{TEST_COMMAND}}
+ai_engineering_system:
+  version: "{{PLUGIN_VERSION}}"
