@@ -13,7 +13,7 @@ deny() {
   exit 0
 }
 
-path="$(jq -r '.tool_input.file_path // empty' <<<"$input")"
+path="$(jq -r '(.tool_input | objects | .file_path) // empty' <<<"$input")"
 base="$(basename -- "$path")"
 if [[ "$base" == .env* && "$base" != ".env.example" ]]; then
   deny "Access to ${base} is blocked. Secrets stay out of agent reach; document variables in .env.example instead."
@@ -22,7 +22,7 @@ fi
 [[ "$tool" == "Read" ]] && exit 0
 
 # Content for Write is .content; for Edit is .new_string; MultiEdit carries .edits[].new_string.
-content="$(jq -r '[.tool_input.content?, .tool_input.new_string?, (.tool_input.edits? // [] | .[].new_string?)] | map(select(. != null)) | join("\n")' <<<"$input")"
+content="$(jq -r '[(.tool_input | objects | .content?), (.tool_input | objects | .new_string?), (.tool_input | objects | .edits? // [] | .[] | objects | .new_string?)] | map(select(. != null)) | join("\n")' <<<"$input")"
 [[ -n "$content" ]] || exit 0
 
 check() { # check <regex> <label>

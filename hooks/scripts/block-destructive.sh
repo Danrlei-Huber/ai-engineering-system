@@ -6,7 +6,7 @@ set -euo pipefail
 input="$(cat)"
 tool="$(jq -r '.tool_name // empty' <<<"$input")"
 [[ "$tool" == "Bash" ]] || exit 0
-cmd="$(jq -r '.tool_input.command // empty' <<<"$input")"
+cmd="$(jq -r '(.tool_input | objects | .command) // empty' <<<"$input")"
 [[ -n "$cmd" ]] || exit 0
 
 deny() {

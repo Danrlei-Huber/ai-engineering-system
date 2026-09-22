@@ -1,0 +1,7 @@
+{
+  "session_id": "t",
+  "cwd": "/work/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Write",
+  "tool_input": "not-an-object"
+}
