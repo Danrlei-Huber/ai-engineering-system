@@ -14,7 +14,7 @@ export interface ChunkOptions {
 
 const DEFAULT_MAX_CHARS = 1800;
 const FENCE = /^\s*(```|~~~)/;
-const HEADING = /^(#{1,6})\s+(.+?)\s*#*\s*$/;
+const HEADING = /^(#{1,6})\s+(.+?)(?:\s+#+)?\s*$/;
 
 interface Section {
   headingPath: string[];
@@ -22,7 +22,7 @@ interface Section {
 }
 
 export function extractTitle(markdown: string, fallback: string): string {
-  const match = markdown.match(/^#\s+(.+?)\s*#*\s*$/m);
+  const match = markdown.match(/^#\s+(.+?)(?:\s+#+)?\s*$/m);
   return match ? match[1].trim() : fallback;
 }
 

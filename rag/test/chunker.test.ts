@@ -76,7 +76,10 @@ describe('extractTitle', () => {
     expect(extractTitle(doc, 'file.md')).toBe('Guide');
     expect(extractTitle('no title here', 'file.md')).toBe('file.md');
   });
-  it('strips trailing ATX closing hashes', () => {
+  it('strips trailing ATX closing hashes but keeps hashes that are part of the text', () => {
     expect(extractTitle('# My Title ###', 'x')).toBe('My Title');
+    expect(extractTitle('# C#', 'x')).toBe('C#');
+    expect(chunkMarkdown('# C#\n\ntext')[0].headingPath).toBe('C#');
+    expect(chunkMarkdown('# My Title ###\n\ntext')[0].headingPath).toBe('My Title');
   });
 });

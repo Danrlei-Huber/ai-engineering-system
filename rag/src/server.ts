@@ -23,7 +23,7 @@ export function buildServer(deps: ToolDeps): McpServer {
   server.registerTool(
     'search_knowledge',
     {
-      description: 'Semantic search over the engineering knowledge base (cosine, top-k). Default scope: the current project plus _global. Returns chunks with heading_path, source location, collection, project, source_id, content_hash and score. Read-only.',
+      description: 'Semantic search over the engineering knowledge base (cosine, top-k). Default scope: the current project plus _global. When no project is known (no `.ai-engineering/project.yaml` and no `RAG_PROJECT`), the search covers every project. Returns chunks with heading_path, source location, collection, project, source_id, content_hash and score. Read-only.',
       inputSchema: z.object({
         query: z.string().min(1),
         project: z.string().min(1).optional(),
