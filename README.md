@@ -54,7 +54,7 @@ Claude Code refuses to write `.claude/settings.json` in non-interactive (`-p`) m
 ## What is enforced, not suggested
 
 - `rm -rf` on roots, force-push to main, `git reset --hard`, `DROP/TRUNCATE`, `kubectl delete`, `terraform destroy`, `docker system prune` are denied by hooks.
-- Writing credential-like content or touching `.env*` (except `.env.example`) is denied.
+- Writing credential-like content or touching `.env` (and environment variants `.env.local`, `.env.*.local`, `.env.development`, `.env.test`, `.env.staging`, `.env.production`) is denied; `.env.example` remains readable.
 - The tester agent can write only test paths through the Edit/Write/MultiEdit tools, and is
   denied file-writing shapes through Bash (redirection, tee, sed -i, mv, cp, patch, rm, git
   checkout/restore/apply/stash). Other Bash writes rely on the prompt and the reviewer.
