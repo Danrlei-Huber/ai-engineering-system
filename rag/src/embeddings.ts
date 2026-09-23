@@ -34,7 +34,12 @@ export class OllamaEmbeddings implements EmbeddingProvider {
         body: JSON.stringify({ model: this.model, input }),
       });
       if (!res.ok) throw new Error(`Ollama /api/embed failed: ${res.status} ${await res.text()}`);
-      const data = (await res.json()) as { embeddings?: unknown };
+      let data: { embeddings?: unknown };
+      try {
+        data = (await res.json()) as { embeddings?: unknown };
+      } catch {
+        throw new Error('Ollama /api/embed returned a non-JSON body');
+      }
       if (!Array.isArray(data.embeddings) || data.embeddings.length !== input.length) {
         throw new Error('Ollama /api/embed returned an unexpected shape (expected embeddings[][] matching input length)');
       }

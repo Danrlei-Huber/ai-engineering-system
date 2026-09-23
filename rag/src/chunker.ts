@@ -22,7 +22,7 @@ interface Section {
 }
 
 export function extractTitle(markdown: string, fallback: string): string {
-  const match = markdown.match(/^#\s+(.+?)\s*$/m);
+  const match = markdown.match(/^#\s+(.+?)\s*#*\s*$/m);
   return match ? match[1].trim() : fallback;
 }
 
@@ -87,6 +87,7 @@ function splitBlocks(body: string): string[] {
   return blocks;
 }
 
+/** Splits a section into chunks respecting maxChars; a single fenced block larger than maxChars is emitted whole to keep the fence intact. */
 function splitOversized(body: string, maxChars: number): string[] {
   if (body.length <= maxChars) return [body];
   const out: string[] = [];

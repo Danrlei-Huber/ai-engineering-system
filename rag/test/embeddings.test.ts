@@ -51,6 +51,11 @@ describe('OllamaEmbeddings', () => {
     const fetchImpl = (async () => new Response(JSON.stringify({ nope: true }), { status: 200 })) as unknown as typeof fetch;
     await expect(new OllamaEmbeddings('http://o', 'm', fetchImpl).embed(['x'])).rejects.toThrow(/unexpected shape/);
   });
+
+  it('throws a readable error on non-JSON 200 body', async () => {
+    const fetchImpl = (async () => new Response('not json at all', { status: 200 })) as unknown as typeof fetch;
+    await expect(new OllamaEmbeddings('http://o', 'm', fetchImpl).embed(['x'])).rejects.toThrow(/non-JSON body/);
+  });
 });
 
 describe('assertDimension', () => {

@@ -76,4 +76,7 @@ describe('extractTitle', () => {
     expect(extractTitle(doc, 'file.md')).toBe('Guide');
     expect(extractTitle('no title here', 'file.md')).toBe('file.md');
   });
+  it('strips trailing ATX closing hashes', () => {
+    expect(extractTitle('# My Title ###', 'x')).toBe('My Title');
+  });
 });
