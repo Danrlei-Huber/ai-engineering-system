@@ -1,10 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { appliedMigrations, listMigrationFiles, migrate, pendingMigrations } from '../src/migrate.js';
+import type { Db } from '../src/db.js';
 import { INTEGRATION, integrationDb, resetSchema } from './helpers/db.js';
 
 describe.skipIf(!INTEGRATION)('migrate (integration)', () => {
-  const sql = integrationDb();
-  beforeAll(async () => { await resetSchema(sql); });
+  let sql: Db;
+  beforeAll(async () => { sql = await integrationDb(); await resetSchema(sql); });
   afterAll(async () => { await sql.end(); });
 
   it('lists 001_init.sql', () => {

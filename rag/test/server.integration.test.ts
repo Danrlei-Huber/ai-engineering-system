@@ -1,20 +1,20 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { FakeEmbeddings } from '../src/embeddings.js';
-import { upsertSourceWithChunks } from '../src/db.js';
+import { upsertSourceWithChunks, type Db } from '../src/db.js';
 import { migrate } from '../src/migrate.js';
 import { buildServer } from '../src/server.js';
-import { INTEGRATION, integrationDb, resetSchema } from './helpers/db.js';
+import { INTEGRATION, TEST_DATABASE_URL, integrationDb, resetSchema } from './helpers/db.js';
 
 describe.skipIf(!INTEGRATION)('MCP server (integration)', () => {
-  const sql = integrationDb();
+  let sql: Db;
   const fake = new FakeEmbeddings();
-  const cfg = { databaseUrl: process.env.RAG_TEST_DATABASE_URL ?? 'postgres://rag:rag_local_only@localhost:5433/rag', ollamaUrl: 'http://127.0.0.1:1', embedModel: 'bge-m3', embedProvider: 'fake' as const, defaultProject: 'p1' };
+  const cfg = { databaseUrl: TEST_DATABASE_URL, ollamaUrl: 'http://127.0.0.1:1', embedModel: 'bge-m3', embedProvider: 'fake' as const, defaultProject: 'p1' };
   let client: Client;
   let sourceId: string;
 
   beforeAll(async () => {
-    await resetSchema(sql); await migrate(sql);
+    sql = await integrationDb(); await resetSchema(sql); await migrate(sql);
     const [e1] = await fake.embed(['PG\n\npostgres migrations must be reversible']);
     const [e2] = await fake.embed(['Testing\n\nevery feature ships with tests']);
     sourceId = await upsertSourceWithChunks(sql, { project: 'p1', collection: 'decisions', path: 'docs/decisions/ADR-001.md', title: 'ADR-001', sha256: 'a' }, [{ position: 0, headingPath: 'PG', content: 'postgres migrations must be reversible', contentHash: 'h1', embedding: e1 }]);

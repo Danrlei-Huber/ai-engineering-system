@@ -51,7 +51,17 @@ function toPosix(p: string): string {
   return p.split(sep).join('/');
 }
 
+/** `--url` labels one document, so the single target must be an existing regular file. */
+export function assertUrlTarget(root: string, targets: string[]): void {
+  if (targets.length !== 1) throw new Error('--url requires exactly one file target');
+  const target = targets[0];
+  const abs = isAbsolute(target) ? target : resolve(root, target);
+  if (!existsSync(abs)) throw new Error(`--url target does not exist: ${target}`);
+  if (!statSync(abs).isFile()) throw new Error('--url requires exactly one file target (got a directory)');
+}
+
 export async function ingest(sql: Db, provider: EmbeddingProvider, opts: IngestOptions, log: (line: string) => void = () => {}): Promise<IngestReport> {
+  if (opts.url) assertUrlTarget(opts.root, opts.targets);
   const report: IngestReport = { ingested: [], skipped: [], pruned: [] };
   const seen: string[] = [];
 
@@ -98,7 +108,10 @@ export async function ingest(sql: Db, provider: EmbeddingProvider, opts: IngestO
     for (const target of opts.targets) {
       const absTarget = isAbsolute(target) ? target : resolve(opts.root, target);
       if (!existsSync(absTarget) || !statSync(absTarget).isDirectory()) continue;
-      const prefix = toPosix(relative(opts.root, absTarget)) + '/';
+      // A target of `.` (or `root` itself) has no prefix: every path-based source of the
+      // project/collection is in scope, which `path like '%'` expresses.
+      const relDir = toPosix(relative(opts.root, absTarget));
+      const prefix = relDir ? relDir + '/' : '';
       const deleted = await pruneSources(sql, opts.project, opts.collection, prefix, seen);
       report.pruned.push(...deleted);
       for (const p of deleted) log(`pruned   ${p}`);
@@ -125,12 +138,13 @@ export function parseIngestArgs(argv: string[], ctx: { defaultProject: string | 
   const collection = values.collection ?? '';
   if (!isCollection(collection)) throw new Error(`--collection must be one of ${COLLECTIONS.join(', ')}`);
   if (positionals.length === 0) throw new Error('at least one target (file or directory) is required');
-  if (values.url && positionals.length !== 1) throw new Error('--url requires exactly one file target');
+  const root = values.root ? resolve(ctx.cwd, values.root) : ctx.cwd;
+  if (values.url) assertUrlTarget(root, positionals);
   return {
     project,
     collection,
     targets: positionals,
-    root: values.root ? resolve(ctx.cwd, values.root) : ctx.cwd,
+    root,
     url: values.url,
     title: values.title,
     prune: values.prune ?? false,

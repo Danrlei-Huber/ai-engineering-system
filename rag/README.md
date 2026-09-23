@@ -22,5 +22,7 @@ npm run ingest:standards         # plugin rules + ADRs into _global/standards
 
 ## Develop
 
-- `npm test` runs unit tests. `RAG_RUN_INTEGRATION=1 RAG_EMBED_PROVIDER=fake npm test` also runs the integration suites against `RAG_TEST_DATABASE_URL` (default: the compose Postgres on 5433); `npm run test:integration` is the shortcut for that (still needs `RAG_EMBED_PROVIDER=fake` set).
+- `npm test` runs unit tests. `RAG_RUN_INTEGRATION=1 RAG_EMBED_PROVIDER=fake npm test` also runs the integration suites; `npm run test:integration` is the shortcut for that (still needs `RAG_EMBED_PROVIDER=fake` set).
+- Integration tests use the `rag_test` database on the compose Postgres (5433) by default and create it if it is missing — they drop and recreate their tables, so they never touch the dev database `rag`. Set `RAG_TEST_DATABASE_URL` to override (CI points it at its own throwaway `rag` service container).
+- `RAG_EMBED_PROVIDER=fake` exported in your shell also applies to the live MCP server: it will then index and search with deterministic fake vectors instead of Ollama (`rag_status` reports `fake (tests/CI only)`). Unset it for real work.
 - The embedding contract is in `src/contract.ts` and `migrations/001_init.sql`; changing it is ADR-006 territory.

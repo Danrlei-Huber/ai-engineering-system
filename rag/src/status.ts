@@ -5,7 +5,7 @@ import type { RagConfig } from './config.js';
 import { EMBED_DIMENSIONS } from './contract.js';
 import { countChunks, type Db } from './db.js';
 import { assertDimension, type EmbeddingProvider } from './embeddings.js';
-import { pendingMigrations } from './migrate.js';
+import { pendingMigrationsReadOnly } from './migrate.js';
 
 export interface Check { name: string; ok: boolean; detail: string }
 export interface RagStatus { ok: boolean; checks: Check[] }
@@ -44,7 +44,10 @@ export async function collectStatus(
         return `v${row.extversion}`;
       }));
       checks.push(await run('migrations', async () => {
-        const pending = await pendingMigrations(sql);
+        // Read-only on purpose: a status check must never create schema_migrations.
+        const [reg] = await sql<{ t: string | null }[]>`select to_regclass('schema_migrations') as t`;
+        if (!reg?.t) throw new Error('not migrated; run npm run migrate');
+        const pending = await pendingMigrationsReadOnly(sql);
         if (pending.length) throw new Error(`pending: ${pending.join(', ')} (run npm run migrate)`);
         return 'up to date';
       }));

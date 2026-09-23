@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { listMarkdownFiles, parseIngestArgs } from '../src/ingest.js';
+import { assertUrlTarget, listMarkdownFiles, parseIngestArgs } from '../src/ingest.js';
 
 describe('listMarkdownFiles', () => {
   it('walks directories recursively, skipping node_modules and .git, and accepts a single file', () => {
@@ -35,5 +35,23 @@ describe('parseIngestArgs', () => {
     expect(() => parseIngestArgs(['--collection', 'docs', 'x'], { defaultProject: undefined, cwd: '/w' })).toThrow(/--project is required/);
     expect(() => parseIngestArgs(['--project', 'p', '--collection', 'docs'], { defaultProject: undefined, cwd: '/w' })).toThrow(/at least one target/);
     expect(() => parseIngestArgs(['--project', 'p', '--collection', 'external', '--url', 'https://x', 'a.md', 'b.md'], { defaultProject: undefined, cwd: '/w' })).toThrow(/--url requires exactly one file/);
+  });
+});
+
+describe('assertUrlTarget', () => {
+  const root = mkdtempSync(join(tmpdir(), 'rag-url-'));
+  mkdirSync(join(root, 'docs'), { recursive: true });
+  writeFileSync(join(root, 'docs', 'a.md'), '# a');
+
+  it('accepts a single regular file, relative or absolute', () => {
+    expect(() => assertUrlTarget(root, ['docs/a.md'])).not.toThrow();
+    expect(() => assertUrlTarget(root, [join(root, 'docs', 'a.md')])).not.toThrow();
+  });
+  it('rejects a directory target', () => {
+    expect(() => assertUrlTarget(root, ['docs'])).toThrow('--url requires exactly one file target (got a directory)');
+  });
+  it('rejects several targets and a missing one', () => {
+    expect(() => assertUrlTarget(root, ['docs/a.md', 'docs'])).toThrow(/--url requires exactly one file target$/);
+    expect(() => assertUrlTarget(root, ['docs/nope.md'])).toThrow(/does not exist/);
   });
 });

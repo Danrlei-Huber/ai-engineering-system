@@ -4,16 +4,16 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { FakeEmbeddings } from '../src/embeddings.js';
 import { ingest } from '../src/ingest.js';
-import { listSources, getSourceWithChunks, countChunks } from '../src/db.js';
+import { listSources, getSourceWithChunks, countChunks, type Db } from '../src/db.js';
 import { migrate } from '../src/migrate.js';
 import { INTEGRATION, integrationDb, resetSchema } from './helpers/db.js';
 
 describe.skipIf(!INTEGRATION)('ingest (integration)', () => {
-  const sql = integrationDb();
+  let sql: Db;
   const fake = new FakeEmbeddings();
   let root: string;
 
-  beforeAll(async () => { await resetSchema(sql); await migrate(sql); });
+  beforeAll(async () => { sql = await integrationDb(); await resetSchema(sql); await migrate(sql); });
   beforeEach(async () => {
     await sql`delete from sources`;
     root = mkdtempSync(join(tmpdir(), 'rag-ing-'));
@@ -50,6 +50,15 @@ describe.skipIf(!INTEGRATION)('ingest (integration)', () => {
     expect((await listSources(sql, { project: 'p1' })).length).toBe(2);
     expect((await ingest(sql, fake, { ...base(), prune: true })).pruned).toEqual(['docs/decisions/ADR-002.md']);
     expect((await listSources(sql, { project: 'p1' })).length).toBe(1);
+  });
+
+  it('prunes vanished files when the target is the root itself', async () => {
+    const rootTarget = () => ({ ...base(), targets: ['.'] });
+    await ingest(sql, fake, rootTarget());
+    expect((await listSources(sql, { project: 'p1' })).length).toBe(2);
+    rmSync(join(root, 'docs', 'decisions', 'ADR-002.md'));
+    expect((await ingest(sql, fake, { ...rootTarget(), prune: true })).pruned).toEqual(['docs/decisions/ADR-002.md']);
+    expect((await listSources(sql, { project: 'p1' })).map((s) => s.path)).toEqual(['docs/decisions/ADR-001.md']);
   });
 
   it('stores external sources by url with retrieved_at metadata', async () => {

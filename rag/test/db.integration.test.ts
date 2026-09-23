@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { FakeEmbeddings } from '../src/embeddings.js';
 import { migrate } from '../src/migrate.js';
-import { countChunks, findSource, getSourceWithChunks, listSources, pruneSources, searchChunks, upsertSourceWithChunks } from '../src/db.js';
+import { countChunks, findSource, getSourceWithChunks, listSources, pruneSources, searchChunks, upsertSourceWithChunks, type Db } from '../src/db.js';
 import { INTEGRATION, integrationDb, resetSchema } from './helpers/db.js';
 
 describe.skipIf(!INTEGRATION)('db repository (integration)', () => {
-  const sql = integrationDb();
+  let sql: Db;
   const fake = new FakeEmbeddings();
 
   async function chunk(position: number, headingPath: string, content: string) {
@@ -13,7 +13,7 @@ describe.skipIf(!INTEGRATION)('db repository (integration)', () => {
     return { position, headingPath, content, contentHash: `h${position}-${content.length}`, embedding };
   }
 
-  beforeAll(async () => { await resetSchema(sql); await migrate(sql); });
+  beforeAll(async () => { sql = await integrationDb(); await resetSchema(sql); await migrate(sql); });
   beforeEach(async () => { await sql`delete from sources`; });
   afterAll(async () => { await sql.end(); });
 

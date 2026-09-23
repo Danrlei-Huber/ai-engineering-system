@@ -21,6 +21,16 @@ export async function pendingMigrations(sql: Db, dir: string = MIGRATIONS_DIR): 
   return listMigrationFiles(dir).filter((f) => !applied.has(f));
 }
 
+/**
+ * Pending migrations without any DDL: assumes `schema_migrations` exists (callers that
+ * must not create it, such as rag_status, check `to_regclass` first).
+ */
+export async function pendingMigrationsReadOnly(sql: Db, dir: string = MIGRATIONS_DIR): Promise<string[]> {
+  const rows = await sql<{ name: string }[]>`select name from schema_migrations`;
+  const applied = new Set(rows.map((r) => r.name));
+  return listMigrationFiles(dir).filter((f) => !applied.has(f));
+}
+
 /** Applies each pending migration in its own transaction. Returns the names applied. */
 export async function migrate(sql: Db, dir: string = MIGRATIONS_DIR): Promise<string[]> {
   const pending = await pendingMigrations(sql, dir);

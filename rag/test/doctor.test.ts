@@ -31,3 +31,37 @@ describe('collectStatus without infrastructure', () => {
     expect(byName['mcp build'].ok).toBe(false);
   });
 });
+
+describe('collectStatus migrations check', () => {
+  const recordingSql = (queries: string[], regclass: string | null) =>
+    ((strings: TemplateStringsArray) => {
+      const q = strings.join('?');
+      queries.push(q);
+      if (q.includes('to_regclass')) return Promise.resolve([{ t: regclass }]);
+      if (q.includes('from schema_migrations')) return Promise.resolve([{ name: '001_init.sql' }]);
+      if (q.includes('pg_extension')) return Promise.resolve([{ extversion: '0.8.0' }]);
+      if (q.includes('count(*)')) return Promise.resolve([{ n: 0 }]);
+      return Promise.resolve([]);
+    }) as unknown as ReturnType<typeof createDb>;
+
+  const cfg = { databaseUrl: 'postgres://u:p@h/db', ollamaUrl: 'http://127.0.0.1:1', embedModel: 'bge-m3', embedProvider: 'fake' as const, defaultProject: undefined };
+
+  it('reads schema_migrations without running any DDL', async () => {
+    const queries: string[] = [];
+    const status = await collectStatus(cfg, { sql: recordingSql(queries, 'schema_migrations'), distPath: '/definitely/missing/server.js' });
+    const migrations = status.checks.find((c) => c.name === 'migrations')!;
+    expect(migrations.ok).toBe(true);
+    expect(migrations.detail).toBe('up to date');
+    expect(queries.some((q) => /create\s+table/i.test(q))).toBe(false);
+  });
+
+  it('reports "not migrated" instead of creating the table when schema_migrations is absent', async () => {
+    const queries: string[] = [];
+    const status = await collectStatus(cfg, { sql: recordingSql(queries, null), distPath: '/definitely/missing/server.js' });
+    const migrations = status.checks.find((c) => c.name === 'migrations')!;
+    expect(migrations.ok).toBe(false);
+    expect(migrations.detail).toMatch(/not migrated; run npm run migrate/);
+    expect(queries.some((q) => /create\s+table/i.test(q))).toBe(false);
+    expect(queries.some((q) => q.includes('from schema_migrations'))).toBe(false);
+  });
+});
