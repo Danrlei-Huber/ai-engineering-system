@@ -1,0 +1,48 @@
+# DEVELOPMENT ONLY. Credentials come from rag/.env (copy rag/.env.example).
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: engineering-rag-postgres
+    restart: unless-stopped
+    ports:
+      - "${RAG_DB_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: ${RAG_DB_USER:-rag}
+      POSTGRES_PASSWORD: ${RAG_DB_PASSWORD:-rag_local_only}
+      POSTGRES_DB: ${RAG_DB_NAME:-rag}
+    volumes:
+      - engineering_rag_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${RAG_DB_USER:-rag} -d ${RAG_DB_NAME:-rag}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  ollama:
+    image: ollama/ollama
+    container_name: engineering-rag-ollama
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - engineering_rag_ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  # One-shot: pulls the embedding model into the ollama volume. Community pattern, not an official recipe.
+  ollama-pull:
+    image: ollama/ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${RAG_EMBED_MODEL:-bge-m3}"]
+    restart: "no"
+
+volumes:
+  engineering_rag_pgdata:
+  engineering_rag_ollama:
