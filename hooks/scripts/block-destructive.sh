@@ -3,7 +3,7 @@
 # Input: hook JSON on stdin. Output: deny JSON, or nothing to allow.
 #
 # The matchers are token-based rather than regex-over-the-whole-string: the
-# command is split on whitespace, each token is stripped of one layer of shell
+# command is split on whitespace, each token is stripped of its shell
 # punctuation, and the matchers then reason about the command word and its
 # arguments. That is what lets `rm -rf -- /` and `rm -rf "$HOME"` be denied
 # while `rm -rf -- node_modules` and `rm -rf "$HOME/.cache/foo"` are allowed.
@@ -56,17 +56,57 @@ cmd_word() {
   printf '%s' "$s"
 }
 
-# Argument: drop one layer of surrounding quotes plus any trailing shell
-# separator, so `"$HOME"`, `'/'`, `/"` and `/)` all reduce to their payload.
+# Argument: drop *every* quote character plus any trailing shell separator, so
+# `"$HOME"`, `'/'`, `/"`, `/)` and spliced forms such as `"$HOME"/`, `"/"*` and
+# `""/` all reduce to the payload the shell would actually pass to the command.
 arg_word() {
   local s="$1"
-  s="${s#[\"\']}"
-  s="${s%[\"\']}"
+  s="${s//\"/}"
+  s="${s//\'/}"
   # A trailing `)` that closes a substitution the token itself opened is part
   # of the argument (`$(pwd)`); otherwise it is a sub-shell terminator.
   [[ "$s" == *'('* ]] || s="${s%[\)\;\&\|]}"
-  s="${s%[\"\']}"
   printf '%s' "$s"
+}
+
+# Find the subcommand of a tool that accepts global flags before it
+# (`git -C /repo push`, `kubectl -n prod delete`, `terraform -chdir=x destroy`).
+# Sets `sub_word` to that token and `sub_index` to its position, so callers can
+# keep parsing the subcommand's own arguments. Flags spelled `--flag=value`
+# carry their value; a flag given a separate value swallows the next token
+# unless that token is itself a flag or one of the <wanted> subcommands -- so
+# `git --no-pager -C x reset` and `kubectl --context prod delete` both resolve.
+# Globals rather than stdout: a command substitution would lose `sub_index`.
+sub_word=""
+sub_index=-1
+subcommand_after_flags() { # subcommand_after_flags <start-index> <wanted>...
+  local k="$1" arg next want skip
+  shift
+  sub_word=""
+  sub_index=-1
+  while ((k < ntok)); do
+    arg="$(arg_word "${tokens[k]}")"
+    case "$arg" in
+      -*)
+        k=$((k + 1))
+        if [[ "$arg" != *=* && k -lt ntok ]]; then
+          next="$(arg_word "${tokens[k]}")"
+          skip=0
+          if [[ "$next" == -* ]]; then skip=1; fi
+          for want in "$@"; do
+            if [[ "$next" == "$want" ]]; then skip=1; fi
+          done
+          if [[ "$skip" -eq 0 ]]; then k=$((k + 1)); fi # the flag's value
+        fi
+        ;;
+      *)
+        sub_word="$arg"
+        sub_index="$k"
+        return 0
+        ;;
+    esac
+  done
+  return 0
 }
 
 # --- rm ------------------------------------------------------------------
@@ -105,7 +145,7 @@ for ((i = 0; i < ntok; i++)); do
   case "$target" in
     '/' | '/*' | '~' | '~/' | '~/*' \
     | '$HOME' | '${HOME}' | '$HOME/' | '${HOME}/' | '$HOME/*' | '${HOME}/*' \
-    | '$PWD' | '${PWD}' | '$(pwd)' \
+    | '$PWD' | '${PWD}' | '$(pwd)' | '`pwd`' \
     | '.' | './' | './*' | '*' | '..' | '../') dangerous=1 ;;
   esac
 
@@ -124,14 +164,15 @@ done
 # Catches: a forced push (-f in any short cluster, --force, or a leading `+`
 # on the refspec; --force-with-lease excluded) whose destination ref is main
 # or master, including `HEAD:main`, `main:main`, `+main`, `:main` and
-# `origin/main`.
+# `origin/main` -- behind any git global flags (`git -C /repo push -f main`).
 for ((i = 0; i + 1 < ntok; i++)); do
   [[ "$(cmd_word "${tokens[i]}")" == "git" || "$(cmd_word "${tokens[i]}")" == */git ]] || continue
-  [[ "$(arg_word "${tokens[i + 1]}")" == "push" ]] || continue
+  subcommand_after_flags $((i + 1)) push reset
+  [[ "$sub_word" == "push" ]] || continue
 
   forced=0
   hits_main=0
-  for ((j = i + 2; j < ntok; j++)); do
+  for ((j = sub_index + 1; j < ntok; j++)); do
     arg="$(arg_word "${tokens[j]}")"
     ref=""
     case "$arg" in
@@ -154,12 +195,14 @@ for ((i = 0; i + 1 < ntok; i++)); do
 done
 
 # --- git reset --hard ------------------------------------------------------
-# Catches: `git reset ... --hard`. Requires `reset` to be the git subcommand,
-# so `git log --grep "reset --hard"` is not mistaken for one.
+# Catches: `git reset ... --hard`, including behind git global flags
+# (`git --no-pager -C x reset --hard`). Requires `reset` to be the git
+# subcommand, so `git log --grep "reset --hard"` is not mistaken for one.
 for ((i = 0; i + 1 < ntok; i++)); do
   [[ "$(cmd_word "${tokens[i]}")" == "git" || "$(cmd_word "${tokens[i]}")" == */git ]] || continue
-  [[ "$(arg_word "${tokens[i + 1]}")" == "reset" ]] || continue
-  for ((j = i + 2; j < ntok; j++)); do
+  subcommand_after_flags $((i + 1)) push reset
+  [[ "$sub_word" == "reset" ]] || continue
+  for ((j = sub_index + 1; j < ntok; j++)); do
     if [[ "$(arg_word "${tokens[j]}")" == "--hard" ]]; then
       deny "git reset --hard is blocked because it discards uncommitted work. Use git stash or ask the user."
     fi
@@ -175,34 +218,15 @@ fi
 # --- kubectl delete / terraform destroy ------------------------------------
 # Catches: the destructive subcommand behind any number of global flags, with
 # or without separate values (`kubectl -n prod delete`, `terraform -chdir=x destroy`).
-subcommand_after_flags() { # subcommand_after_flags <start-index>
-  local k="$1" arg next
-  while ((k < ntok)); do
-    arg="$(arg_word "${tokens[k]}")"
-    case "$arg" in
-      -*)
-        k=$((k + 1))
-        if [[ "$arg" != *=* && k -lt ntok ]]; then
-          next="$(arg_word "${tokens[k]}")"
-          case "$next" in
-            -* | delete | destroy) ;;
-            *) k=$((k + 1)) ;; # the flag's value
-          esac
-        fi
-        ;;
-      *) printf '%s' "$arg"; return 0 ;;
-    esac
-  done
-  return 0
-}
-
 for ((i = 0; i < ntok; i++)); do
   case "$(cmd_word "${tokens[i]}")" in
     kubectl | */kubectl)
-      [[ "$(subcommand_after_flags $((i + 1)))" == "delete" ]] && deny "kubectl delete is blocked. Ask the user to run it."
+      subcommand_after_flags $((i + 1)) delete
+      if [[ "$sub_word" == "delete" ]]; then deny "kubectl delete is blocked. Ask the user to run it."; fi
       ;;
     terraform | */terraform)
-      [[ "$(subcommand_after_flags $((i + 1)))" == "destroy" ]] && deny "terraform destroy is blocked."
+      subcommand_after_flags $((i + 1)) destroy
+      if [[ "$sub_word" == "destroy" ]]; then deny "terraform destroy is blocked."; fi
       ;;
   esac
 done

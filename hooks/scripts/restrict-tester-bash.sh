@@ -45,6 +45,8 @@ esac
 if grep -Eq '(^|[^[:alnum:]_.-])tee( |$)' <<<"$norm"; then deny "tee"; fi
 if grep -Eq '(^|[^[:alnum:]_.-])sed +(-[a-zA-Z]*i|--in-place)' <<<"$norm"; then deny "sed in-place"; fi
 if grep -Eq '(^|[^[:alnum:]_.-])(mv|cp|patch|rm|truncate|dd) +' <<<"$norm"; then deny "a file-writing utility"; fi
-if grep -Eq '(^|[^[:alnum:]_.-])git +(checkout|restore|apply|stash)( |$)' <<<"$norm"; then deny "a git command that rewrites the working tree"; fi
+# Git global flags may sit between `git` and the subcommand (`git -C x stash`),
+# so skip the value-taking and standalone globals before matching it.
+if grep -Eq '(^|[^[:alnum:]_.-])git( +(-[cC] +[^ ]+|--git-dir=[^ ]+|--work-tree=[^ ]+|--namespace=[^ ]+|--no-pager|-[pP]))* +(checkout|restore|apply|stash)( |$)' <<<"$norm"; then deny "a git command that rewrites the working tree"; fi
 
 exit 0
