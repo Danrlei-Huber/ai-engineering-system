@@ -1,6 +1,6 @@
 ---
 name: setup-project
-description: Scaffold a target project for the ai-engineering-system plugin: CLAUDE.md, .claude/settings.json deny rules and .ai-engineering/project.yaml. Never overwrites existing files.
+description: Scaffold a target project for the ai-engineering-system plugin: CLAUDE.md, .claude/settings.json deny rules and an allow rule for the read-only RAG tools, and .ai-engineering/project.yaml. Never overwrites existing files.
 disable-model-invocation: true
 ---
 

@@ -22,5 +22,5 @@ npm run ingest:standards         # plugin rules + ADRs into _global/standards
 
 ## Develop
 
-- `npm test` runs unit tests. `RAG_RUN_INTEGRATION=1 RAG_EMBED_PROVIDER=fake npm test` also runs the integration suites against `RAG_TEST_DATABASE_URL` (default: the compose Postgres on 5433).
+- `npm test` runs unit tests. `RAG_RUN_INTEGRATION=1 RAG_EMBED_PROVIDER=fake npm test` also runs the integration suites against `RAG_TEST_DATABASE_URL` (default: the compose Postgres on 5433); `npm run test:integration` is the shortcut for that (still needs `RAG_EMBED_PROVIDER=fake` set).
 - The embedding contract is in `src/contract.ts` and `migrations/001_init.sql`; changing it is ADR-006 territory.
