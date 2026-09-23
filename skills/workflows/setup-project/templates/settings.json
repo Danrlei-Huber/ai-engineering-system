@@ -1,5 +1,8 @@
 {
   "permissions": {
+    "allow": [
+      "mcp__plugin_ai-engineering-system_engineering-rag__*"
+    ],
     "deny": [
       "Read(./.env)",
       "Read(./.env.local)",

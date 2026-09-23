@@ -34,6 +34,13 @@ See `.env.example` for the RAG variables and `rag/README.md` for bringing the kn
 `n8n-mcp` starts in every session and reports an MCP error at startup if `N8N_API_KEY` is unset;
 that is expected until the key is exported.
 
+MCP tool calls made by subagents (like `research`'s RAG lookups) need permission like any other
+tool. Interactively, Claude Code prompts once the first time and you can choose "always allow".
+Non-interactively, pass `--allowedTools "mcp__plugin_ai-engineering-system_engineering-rag__*"`
+(or list the exact tools) so the call isn't silently denied. `/setup-project` writes an allow rule
+for the read-only RAG tools into the project's `.claude/settings.json` so this works out of the
+box for projects it has set up.
+
 ## Use in a project
 
 1. `/setup-project` writes `CLAUDE.md`, `.claude/settings.json` (deny rules) and `.ai-engineering/project.yaml`.
