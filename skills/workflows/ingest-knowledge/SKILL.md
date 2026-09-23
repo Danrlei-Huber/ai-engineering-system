@@ -17,10 +17,13 @@ Candidate docs:
 Rules: the skill resolves paths and calls the CLI; it never re-implements ingestion.
 
 1. Resolve `PROJECT` from `project.yaml`. If missing, stop and tell the user to run `/setup-project` (or pass a project explicitly is not supported here on purpose).
-2. Check readiness: `node ${CLAUDE_PLUGIN_ROOT}/rag/dist/cli/doctor.js`. If it exits non-zero, show its output and stop; the fix is always in that output (compose up, migrate, build, pull model). The plugin path must not contain spaces.
+2. Check readiness: `node ${CLAUDE_PLUGIN_ROOT}/rag/dist/cli/doctor.js`. If `rag/dist/cli/doctor.js` does not exist, tell the user to run `npm ci && npm run build` in `<plugin>/rag` and stop. If it exits non-zero, show its output and stop; the fix is always in that output (compose up, migrate, build, pull model). The plugin path must not contain spaces.
 3. Decide targets:
    - If a path was given: one run with that path and `--collection` from the arguments (default `docs`), plus `--prune` if given.
-   - Otherwise the default set, each as its own run: `docs/decisions` → `decisions` (if it exists); `docs` → `docs` (if it exists; ADRs inside are skipped as unchanged duplicates only if already ingested under `decisions`, so run `decisions` first); `README.md` → `docs` (if it exists).
+   - Otherwise the default set, each as its own run:
+     - `docs/decisions` → `decisions`, if that directory exists.
+     - `docs` → `docs`: list the entries of `docs/` (`ls docs`) and pass every entry EXCEPT `decisions` as targets of one run: `node ${CLAUDE_PLUGIN_ROOT}/rag/dist/cli/ingest.js --project <PROJECT> --collection docs docs/<entry1> docs/<entry2> ...`. Skip this run when `docs/` has no other entry. Do not pass `docs/` itself when `docs/decisions/` exists, or the ADRs would be indexed twice.
+     - `README.md` → `docs`, if it exists.
 4. Run from the project root so stored paths are repo-relative:
    `node ${CLAUDE_PLUGIN_ROOT}/rag/dist/cli/ingest.js --project <PROJECT> --collection <c> [--prune] <path>`
 5. Report per run: ingested, skipped, pruned counts and any error verbatim.
