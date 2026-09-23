@@ -1,0 +1,32 @@
+{
+  "name": "engineering-rag",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:integration": "RAG_RUN_INTEGRATION=1 vitest run",
+    "migrate": "tsx src/cli/migrate.ts",
+    "ingest": "tsx src/cli/ingest.ts",
+    "ingest:standards": "tsx src/cli/ingest.ts --root .. --project _global --collection standards docs/decisions skills/rules",
+    "doctor": "tsx src/cli/doctor.ts",
+    "server": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
+    "pgvector": "^0.3.0",
+    "postgres": "^3.4.9",
+    "yaml": "^2.9.1",
+    "zod": "^4.2.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.0.1"
+  }
+}
