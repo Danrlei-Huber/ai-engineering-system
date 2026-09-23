@@ -17,6 +17,11 @@ claude plugin marketplace add /path/to/ai-engineering-system
 claude plugin install ai-engineering-system@ai-engineering-local
 ```
 
+After installing the plugin, build the RAG once:
+```bash
+cd rag && npm ci && npm run build
+```
+
 `.claude-plugin/marketplace.json` uses a relative-path `source: "."` — the only form the
 validator accepts for a local marketplace. When the repo is pushed to GitHub, the source can be
 switched to `{ "source": "github", "repo": "<owner>/ai-engineering-system" }` per the
@@ -30,6 +35,12 @@ export N8N_API_KEY=...            # n8n MCP
 export N8N_API_URL=http://localhost:5678
 ```
 See `.env.example` for the RAG variables and `rag/README.md` for bringing the knowledge base up.
+
+Knowledge base (optional but recommended):
+```bash
+cd rag && cp -n .env.example .env && docker compose up -d && npm ci && npm run build && npm run migrate && npm run doctor
+```
+Then in each project: `/setup-project` once, `/ingest-knowledge` whenever docs or ADRs change.
 
 `n8n-mcp` starts in every session and reports an MCP error at startup if `N8N_API_KEY` is unset;
 that is expected until the key is exported.
