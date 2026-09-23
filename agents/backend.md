@@ -2,7 +2,7 @@
 name: backend
 description: Implements an approved architecture-plan in the codebase. Writes production code, not tests. Returns an implementation-result contract.
 tools: Read, Edit, Write, Glob, Grep, Bash
-disallowedTools: mcp__n8n-mcp, mcp__engineering-rag
+disallowedTools: mcp__plugin_ai-engineering-system_n8n-mcp, mcp__plugin_ai-engineering-system_engineering-rag
 model: inherit
 skills:
   - rules-architecture

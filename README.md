@@ -58,6 +58,9 @@ Claude Code refuses to write `.claude/settings.json` in non-interactive (`-p`) m
 - The tester agent can write only test paths through the Edit/Write/MultiEdit tools, and is
   denied file-writing shapes through Bash (redirection, tee, sed -i, mv, cp, patch, rm, git
   checkout/restore/apply/stash). Other Bash writes rely on the prompt and the reviewer.
+- MCP tools provided by this plugin (the RAG and n8n servers) are exposed to agents under the
+  namespaced tool prefix `mcp__plugin_ai-engineering-system_<server>__<tool>`, not the bare
+  server name, so agent frontmatter must use that prefix for the tools to actually be granted.
 - The reviewer and architect cannot edit. Only `automation` reaches n8n.
 - Both tester restrictions are plugin-level hooks that apply only when the calling subagent is
   the tester; agent-frontmatter hooks are ignored for plugin agents in Claude Code 2.1.x.

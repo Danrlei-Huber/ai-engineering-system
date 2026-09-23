@@ -114,6 +114,8 @@ Least privilege: each agent gets the minimum tool set for its role. Nobody who w
 
 Denials use `disallowedTools` (e.g. `mcp__n8n-mcp`). The tester's path restriction is a `PreToolUse` hook declared in the agent's own frontmatter, so it applies only to that agent.
 
+> Table names above (`mcp__engineering-rag__*`, `mcp__n8n-mcp__*`) are the logical server/tool names. In agent frontmatter, the concrete tool identity Claude Code grants under `--plugin-dir` is namespaced as `mcp__plugin_ai-engineering-system_<server>__<tool>` (e.g. `mcp__plugin_ai-engineering-system_engineering-rag__rag_status`); the bare form is not sufficient.
+
 The reviewer receives **diff + requirements + architecture-plan + test-result**, never the implementer's narrative, to keep the review independent.
 
 The architect must search the RAG `decisions` collection before planning; when the change is architectural and no ADR covers it, the plan includes a draft ADR.

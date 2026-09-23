@@ -2,7 +2,7 @@
 name: reviewer
 description: Independent review of a diff against its architecture-plan and test-result. Read-only. Returns a review-result contract with APPROVE or CHANGES.
 tools: Read, Glob, Grep, Bash
-disallowedTools: Edit, Write, MultiEdit, mcp__n8n-mcp, mcp__engineering-rag
+disallowedTools: Edit, Write, MultiEdit, mcp__plugin_ai-engineering-system_n8n-mcp, mcp__plugin_ai-engineering-system_engineering-rag
 model: inherit
 skills:
   - rules-architecture

@@ -16,3 +16,4 @@ matching its contract. Text before the block is allowed; text after it is ignore
 
 - Subagent type: use the prefixed form `ai-engineering-system:<agent>` (e.g. `ai-engineering-system:reviewer`) with the Agent tool — confirmed working on claude 2.1.280; no fallback to the bare name was needed.
 - Skill name: use the bare form (e.g. `rules-architecture`) in an agent's frontmatter `skills:` list — confirmed preloaded and reported by the dispatched subagent itself; no `ai-engineering-system:` prefix was needed.
+- MCP tools provided by this plugin are exposed as `mcp__plugin_ai-engineering-system_<server>__<tool>` (verified live on Claude Code 2.1.280 with `--plugin-dir`); agent frontmatter must use that prefix. Re-verify after the first marketplace install.
