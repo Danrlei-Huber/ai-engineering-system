@@ -26,6 +26,40 @@ jobs:
       - run: npm install -g @anthropic-ai/claude-code@2.1.280
       - run: claude plugin validate . --strict
 
+  rag:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: rag
+          POSTGRES_PASSWORD: rag_local_only
+          POSTGRES_DB: rag
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U rag -d rag"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    defaults:
+      run:
+        working-directory: rag
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: rag/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+        env:
+          RAG_RUN_INTEGRATION: "1"
+          RAG_EMBED_PROVIDER: fake
+          RAG_TEST_DATABASE_URL: postgres://rag:rag_local_only@localhost:5433/rag
+
   evals:
     if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     runs-on: ubuntu-latest
