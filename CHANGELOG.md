@@ -4,6 +4,12 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 
 ## [Unreleased]
 
+### Fixed
+- `block-destructive.sh` applies the destructive-SQL guard (DROP/TRUNCATE) only when the command
+  invokes a SQL client (`psql`, `mysql`, `sqlite3`, ...), so a commit message or a test filter
+  that merely mentions such a statement is no longer denied. Piped SQL and
+  `docker exec ... psql -c` stay denied.
+
 ## [0.1.0] - 2026-09-22
 
 ### Added

@@ -210,8 +210,19 @@ for ((i = 0; i + 1 < ntok; i++)); do
 done
 
 # --- destructive SQL -------------------------------------------------------
-# Catches: DROP TABLE/DATABASE/SCHEMA and TRUNCATE inside any -c "..." payload.
-if grep -Eiq '(^|[^a-z_])(drop +(table|database|schema)|truncate( +table)?) +[a-z_"]' <<<"$norm"; then
+# Catches: DROP TABLE/DATABASE/SCHEMA or TRUNCATE; applies only when the command
+# invokes a SQL client (psql, mysql, sqlite3, ...), whether in a -c/-e payload,
+# piped on stdin or behind `docker exec`. A commit message or a test filter that
+# merely mentions such a statement invokes no client and is allowed.
+sql_client=0
+for ((i = 0; i < ntok; i++)); do
+  case "$(cmd_word "${tokens[i]}")" in
+    psql | */psql | pgcli | */pgcli | mysql | */mysql | mariadb | */mariadb | mycli | */mycli \
+    | sqlite3 | */sqlite3 | sqlcmd | */sqlcmd | cockroach | */cockroach \
+    | clickhouse-client | */clickhouse-client | duckdb | */duckdb) sql_client=1 ;;
+  esac
+done
+if [[ "$sql_client" -eq 1 ]] && grep -Eiq '(^|[^a-z_])(drop +(table|database|schema)|truncate( +table)?) +[a-z_"]' <<<"$norm"; then
   deny "Destructive SQL (DROP/TRUNCATE) is blocked. Write a reversible migration and ask the user."
 fi
 

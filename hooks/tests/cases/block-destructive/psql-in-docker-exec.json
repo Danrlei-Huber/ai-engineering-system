@@ -1,0 +1,9 @@
+{
+  "session_id": "t",
+  "cwd": "/work/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "docker exec engineering-rag-postgres psql -U rag -d rag -c \"TRUNCATE TABLE chunks\""
+  }
+}
