@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Db } from './db.js';
@@ -6,8 +6,13 @@ import type { Db } from './db.js';
 // Works from src/ (tsx) and from dist/ (node): both are one level under rag/.
 export const MIGRATIONS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
 
+/** Forward migrations only: `NNN_name.sql`. The matching `NNN_name.down.sql` reverts it. */
 export function listMigrationFiles(dir: string = MIGRATIONS_DIR): string[] {
-  return readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  return readdirSync(dir).filter((f) => f.endsWith('.sql') && !f.endsWith('.down.sql')).sort();
+}
+
+export function downFileFor(name: string): string {
+  return name.replace(/\.sql$/, '.down.sql');
 }
 
 export async function appliedMigrations(sql: Db): Promise<string[]> {
@@ -42,4 +47,19 @@ export async function migrate(sql: Db, dir: string = MIGRATIONS_DIR): Promise<st
     });
   }
   return pending;
+}
+
+/** Reverts the most recently applied migration with its `.down.sql`, in one transaction. Returns its name, or undefined when nothing is applied. */
+export async function rollback(sql: Db, dir: string = MIGRATIONS_DIR): Promise<string | undefined> {
+  const applied = await appliedMigrations(sql);
+  const last = applied[applied.length - 1];
+  if (!last) return undefined;
+  const down = join(dir, downFileFor(last));
+  if (!existsSync(down)) throw new Error(`${last} has no ${downFileFor(last)}; cannot roll back`);
+  const body = readFileSync(down, 'utf8');
+  await sql.begin(async (tx) => {
+    await tx.unsafe(body);
+    await tx`delete from schema_migrations where name = ${last}`;
+  });
+  return last;
 }

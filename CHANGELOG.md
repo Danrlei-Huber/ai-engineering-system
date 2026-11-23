@@ -5,6 +5,9 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 ## [Unreleased]
 
 ### Added
+- RAG: `npm run migrate:down` reverts the last applied migration with its `NNN_name.down.sql`
+  (`rollback()` in `migrate.ts`); `migrations/001_init.down.sql` added. `listMigrationFiles`
+  ignores `.down.sql` files.
 - Plugin icon (`.claude-plugin/icon.png`, 1024 px), required by `claude plugin validate --strict`
   from Claude Code 2.1.330.
 

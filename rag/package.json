@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:integration": "RAG_RUN_INTEGRATION=1 vitest run",
     "migrate": "tsx src/cli/migrate.ts",
+    "migrate:down": "tsx src/cli/migrate.ts --down",
     "ingest": "tsx src/cli/ingest.ts",
     "ingest:standards": "tsx src/cli/ingest.ts --root .. --project _global --collection standards docs/decisions skills/rules",
     "doctor": "tsx src/cli/doctor.ts",

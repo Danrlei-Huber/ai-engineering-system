@@ -22,6 +22,7 @@ npm run ingest:standards         # plugin rules + ADRs into _global/standards
 - `npm run ingest -- --project <p> --collection <docs|decisions|standards|external> [--prune] <path...>` (paths stored relative to the cwd; use `--root` to change it)
 - `npm run ingest -- --project <p> --collection external --url <u> --title <t> <file.md>`
 - `npm run doctor` for a full checklist; the `rag_status` MCP tool gives the same data to agents.
+- `npm run migrate:down` reverts the last applied migration with its `NNN_name.down.sql` (one step per call; `npm run migrate` re-applies).
 - Data lives in the Docker volumes `engineering_rag_pgdata` and `engineering_rag_ollama`.
 
 ## Develop
