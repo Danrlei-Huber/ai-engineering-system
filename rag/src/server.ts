@@ -1,4 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/server';
+import { McpServer, type Transport } from '@modelcontextprotocol/server';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import { pathToFileURL } from 'node:url';
 import * as z from 'zod';
@@ -64,25 +64,41 @@ export function buildServer(deps: ToolDeps): McpServer {
   return server;
 }
 
-async function main(): Promise<void> {
-  const cfg = loadConfig();
-  const sql = createDb(cfg.databaseUrl);
-  const provider = createEmbeddingProvider(cfg);
+export interface StartOptions {
+  deps: ToolDeps;
+  transport: Transport;
+  /** Called with 1 on an embedding contract violation. Defaults to process.exit. */
+  exit?: (code: number) => void;
+  log?: (line: string) => void;
+}
 
-  // Fail fast only on a contract violation. Connectivity problems degrade to tool-level errors.
+/**
+ * Connects the transport first, then probes the embedding contract. The probe can take a while
+ * (Ollama loads the model on its first /api/embed call), and doing it before connect() kept the
+ * MCP handshake waiting until the client gave up on the server.
+ */
+export async function start({ deps, transport, exit = (code) => process.exit(code), log = (line) => console.error(line) }: StartOptions): Promise<McpServer> {
+  const server = buildServer(deps);
+  await server.connect(transport);
+  log(`[engineering-rag] v${SERVER_VERSION} ready (project: ${deps.cfg.defaultProject ?? 'none'}, provider: ${deps.provider.name})`);
+
+  // Fail only on a contract violation. Connectivity problems degrade to tool-level errors.
   try {
-    await assertDimension(provider);
+    await assertDimension(deps.provider);
   } catch (err) {
     if (err instanceof DimensionMismatchError) {
-      console.error(err.message);
-      process.exit(1);
+      log(err.message);
+      exit(1);
+      return server;
     }
-    console.error(`[engineering-rag] embedding provider unavailable at startup: ${(err as Error).message}`);
+    log(`[engineering-rag] embedding provider unavailable at startup: ${(err as Error).message}`);
   }
+  return server;
+}
 
-  const server = buildServer({ sql, provider, cfg });
-  await server.connect(new StdioServerTransport());
-  console.error(`[engineering-rag] v${SERVER_VERSION} ready (project: ${cfg.defaultProject ?? 'none'}, provider: ${provider.name})`);
+async function main(): Promise<void> {
+  const cfg = loadConfig();
+  await start({ deps: { sql: createDb(cfg.databaseUrl), provider: createEmbeddingProvider(cfg), cfg }, transport: new StdioServerTransport() });
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

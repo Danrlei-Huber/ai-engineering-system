@@ -29,6 +29,10 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 - RAG: `upsertSourceWithChunks` inserts chunks in batches of 100 rows (`CHUNK_INSERT_BATCH`)
   instead of one statement per chunk, so ingesting a large document takes a handful of
   round-trips rather than hundreds.
+- RAG: the MCP server connects its stdio transport before probing the embedding contract
+  (`start()` in `server.ts`). The probe can take tens of seconds while Ollama loads the model,
+  and running it first left the MCP handshake waiting until the client gave up. A dimension
+  mismatch still exits with code 1.
 
 ## [0.1.0] - 2026-09-22
 
