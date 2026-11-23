@@ -23,9 +23,9 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   Claude Code loads both locations; the plugin validator warns about a root `CLAUDE.md`
   because it is not shipped as plugin context. `claude plugin validate --strict` passes on
   Claude Code 2.1.330.
-- CI uses `actions/checkout@v5`, `actions/setup-node@v5` and `actions/upload-artifact@v5`
-  (were v4), which run on Node 24; GitHub had started forcing the v4 majors off the deprecated
-  Node 20 runtime with a warning on every job.
+- CI uses `actions/checkout@v7`, `actions/setup-node@v7` and `actions/upload-artifact@v7`
+  (were v4), the current majors, which run on Node 24; GitHub had started forcing the v4 majors
+  off the deprecated Node 20 runtime with a warning on every job.
 - CI installs Claude Code 2.1.330 (was 2.1.280) for the `plugin` and `evals` jobs. The
   `agent_type` hook-input field and the `<plugin>:<agent>` subagent type were re-verified on
   2.1.330.

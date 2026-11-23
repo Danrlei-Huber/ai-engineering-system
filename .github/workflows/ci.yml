@@ -12,7 +12,7 @@ jobs:
   hooks:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - run: sudo apt-get update && sudo apt-get install -y jq shellcheck
       - run: shellcheck hooks/scripts/*.sh hooks/tests/run.sh evals/*/scaffold.sh
       - run: bash hooks/tests/run.sh
@@ -20,8 +20,8 @@ jobs:
   plugin:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: 22 }
       - run: npm install -g @anthropic-ai/claude-code@2.1.330
       - run: claude plugin validate . --strict
@@ -45,8 +45,8 @@ jobs:
       run:
         working-directory: rag
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -67,8 +67,8 @@ jobs:
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with: { node-version: 22 }
       - run: sudo apt-get update && sudo apt-get install -y jq bubblewrap socat
       - run: npm install -g @anthropic-ai/claude-code@2.1.330
@@ -76,7 +76,7 @@ jobs:
           claude plugin eval . --scaffold --trust-plugin --ablation none
           --threshold 0.8 --allow-tools Bash Write Edit --model claude-sonnet-5
           --json results.json --no-publish
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: eval-results
