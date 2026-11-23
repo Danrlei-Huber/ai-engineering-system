@@ -42,8 +42,8 @@ cd rag && cp -n .env.example .env && docker compose up -d && npm ci && npm run b
 ```
 Then in each project: `/setup-project` once, `/ingest-knowledge` whenever docs or ADRs change.
 
-`n8n-mcp` starts in every session and reports an MCP error at startup if `N8N_API_KEY` is unset;
-that is expected until the key is exported.
+`n8n-mcp` starts in every session even when `N8N_API_KEY` is unset (`.mcp.json` defaults it to
+empty); the n8n management tools then fail until the key is exported.
 
 MCP tool calls made by subagents (like `research`'s RAG lookups) need permission like any other
 tool. Interactively, Claude Code prompts once the first time and you can choose "always allow".
