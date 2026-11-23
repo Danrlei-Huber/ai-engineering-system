@@ -4,6 +4,10 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 
 ## [Unreleased]
 
+### Added
+- Plugin icon (`.claude-plugin/icon.png`, 1024 px), required by `claude plugin validate --strict`
+  from Claude Code 2.1.330.
+
 ### Fixed
 - `block-destructive.sh` applies the destructive-SQL guard (DROP/TRUNCATE) only when the command
   invokes a SQL client (`psql`, `mysql`, `sqlite3`, ...), so a commit message or a test filter
