@@ -33,6 +33,10 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   (`start()` in `server.ts`). The probe can take tens of seconds while Ollama loads the model,
   and running it first left the MCP handshake waiting until the client gave up. A dimension
   mismatch still exits with code 1.
+- RAG chunker: a fence now closes only on a line of the same marker (backticks or tildes) at
+  least as long as the opening one, per CommonMark; a `~~~` line inside a backtick block, or a
+  shorter run, no longer ends it. `extractTitle` skips `#` lines inside fences, so a shell
+  comment in a code block preceding the H1 is no longer taken as the document title.
 
 ## [0.1.0] - 2026-09-22
 

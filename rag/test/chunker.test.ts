@@ -56,6 +56,18 @@ describe('chunkMarkdown', () => {
     const chunks = chunkMarkdown('just text\n\nmore text');
     expect(chunks).toEqual([{ position: 0, headingPath: '', content: 'just text\n\nmore text' }]);
   });
+
+  it('does not close a backtick fence with a tilde line (or vice versa)', () => {
+    const mixed = '# T\n\n```\n~~~\n# inside\n```\n\n## After\n\nx';
+    expect(chunkMarkdown(mixed).map((c) => c.headingPath)).toEqual(['T', 'T > After']);
+    const tilde = '# T\n\n~~~\n```\n# inside\n~~~\n\n## After\n\nx';
+    expect(chunkMarkdown(tilde).map((c) => c.headingPath)).toEqual(['T', 'T > After']);
+  });
+
+  it('closes a fence only with at least as many markers as opened it', () => {
+    const nested = '# T\n\n````md\n```\n# inside\n```\n````\n\n## After\n\nx';
+    expect(chunkMarkdown(nested).map((c) => c.headingPath)).toEqual(['T', 'T > After']);
+  });
 });
 
 describe('embedText and contentHash', () => {
@@ -75,6 +87,10 @@ describe('extractTitle', () => {
   it('uses the first H1, else the fallback', () => {
     expect(extractTitle(doc, 'file.md')).toBe('Guide');
     expect(extractTitle('no title here', 'file.md')).toBe('file.md');
+  });
+  it('ignores # lines inside fenced code blocks', () => {
+    expect(extractTitle('```bash\n# not a heading\n```\n\n# Real Title\n\ntext', 'x')).toBe('Real Title');
+    expect(extractTitle('```bash\n# not a heading\n```\n\ntext', 'fallback.md')).toBe('fallback.md');
   });
   it('strips trailing ATX closing hashes but keeps hashes that are part of the text', () => {
     expect(extractTitle('# My Title ###', 'x')).toBe('My Title');
