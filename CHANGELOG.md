@@ -8,6 +8,12 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 - Plugin icon (`.claude-plugin/icon.png`, 1024 px), required by `claude plugin validate --strict`
   from Claude Code 2.1.330.
 
+### Changed
+- The repository's own development instructions moved from `CLAUDE.md` to `.claude/CLAUDE.md`.
+  Claude Code loads both locations; the plugin validator warns about a root `CLAUDE.md`
+  because it is not shipped as plugin context. `claude plugin validate --strict` passes on
+  Claude Code 2.1.330.
+
 ### Fixed
 - `block-destructive.sh` applies the destructive-SQL guard (DROP/TRUNCATE) only when the command
   invokes a SQL client (`psql`, `mysql`, `sqlite3`, ...), so a commit message or a test filter
