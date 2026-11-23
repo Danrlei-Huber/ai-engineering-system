@@ -39,6 +39,14 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   comment in a code block preceding the H1 is no longer taken as the document title.
 - RAG: `pruneSources` takes the path prefix literally; `_` and `%` in a directory name
   (`docs_v1/`) no longer act as LIKE wildcards, which could have pruned a sibling directory.
+- RAG: the CLIs and the MCP server read `rag/.env`, the same file docker compose reads, and
+  derive the database and Ollama URLs from `RAG_DB_USER`, `RAG_DB_PASSWORD`, `RAG_DB_NAME`,
+  `RAG_DB_PORT` and `OLLAMA_PORT`. Changing a port or password there used to break
+  `npm run migrate`, `doctor`, `ingest` and the server silently, because they only looked at
+  `RAG_DATABASE_URL`/`OLLAMA_URL` with hardcoded defaults. Precedence: shell environment, then
+  `rag/.env`, then the compose defaults; empty values count as unset, so `.mcp.json` now passes
+  `${VAR:-}` instead of duplicating the defaults. The integration-test database URL follows the
+  same variables (always database `rag_test`).
 
 ### Security
 - RAG: `@modelcontextprotocol/server` 2.0.0 -> 2.4.0 and `zod` -> 4.6.7, clearing the

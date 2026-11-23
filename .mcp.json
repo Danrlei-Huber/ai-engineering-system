@@ -17,10 +17,10 @@
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/rag/dist/server.js"],
       "env": {
-        "RAG_DATABASE_URL": "${RAG_DATABASE_URL:-postgres://rag:rag_local_only@localhost:5433/rag}",
-        "OLLAMA_URL": "${OLLAMA_URL:-http://localhost:11434}",
-        "RAG_EMBED_MODEL": "${RAG_EMBED_MODEL:-bge-m3}",
-        "RAG_EMBED_PROVIDER": "${RAG_EMBED_PROVIDER:-ollama}"
+        "RAG_DATABASE_URL": "${RAG_DATABASE_URL:-}",
+        "OLLAMA_URL": "${OLLAMA_URL:-}",
+        "RAG_EMBED_MODEL": "${RAG_EMBED_MODEL:-}",
+        "RAG_EMBED_PROVIDER": "${RAG_EMBED_PROVIDER:-}"
       }
     }
   }

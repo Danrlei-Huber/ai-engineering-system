@@ -13,6 +13,10 @@ npm run doctor                   # must end with "RAG is ready."
 npm run ingest:standards         # plugin rules + ADRs into _global/standards
 ```
 
+## Configure
+
+`rag/.env` is read by docker compose and by the CLIs and the MCP server alike: `RAG_DB_USER`, `RAG_DB_PASSWORD`, `RAG_DB_NAME`, `RAG_DB_PORT` and `OLLAMA_PORT` give the database and Ollama URLs, so changing a port or password there moves everything together. Precedence, highest first: variables exported in the shell, `rag/.env`, the compose defaults. `RAG_DATABASE_URL` and `OLLAMA_URL` override the derived URLs for a database or Ollama that compose does not manage. `npm run doctor` prints the URL in effect (password masked).
+
 ## Operate
 
 - `npm run ingest -- --project <p> --collection <docs|decisions|standards|external> [--prune] <path...>` (paths stored relative to the cwd; use `--root` to change it)
