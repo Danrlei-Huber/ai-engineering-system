@@ -13,6 +13,9 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   Claude Code loads both locations; the plugin validator warns about a root `CLAUDE.md`
   because it is not shipped as plugin context. `claude plugin validate --strict` passes on
   Claude Code 2.1.330.
+- CI installs Claude Code 2.1.330 (was 2.1.280) for the `plugin` and `evals` jobs. The
+  `agent_type` hook-input field and the `<plugin>:<agent>` subagent type were re-verified on
+  2.1.330.
 
 ### Fixed
 - `block-destructive.sh` applies the destructive-SQL guard (DROP/TRUNCATE) only when the command
