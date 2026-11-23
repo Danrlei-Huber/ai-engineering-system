@@ -12,6 +12,9 @@ export class DimensionMismatchError extends Error {
   }
 }
 
+/** Generous because the first call after start loads the model; a hung daemon still fails instead of blocking the tool forever. */
+export const DEFAULT_EMBED_TIMEOUT_MS = 60_000;
+
 /** Ollama POST /api/embed (batch endpoint; /api/embeddings is superseded). */
 export class OllamaEmbeddings implements EmbeddingProvider {
   readonly name: string;
@@ -20,6 +23,7 @@ export class OllamaEmbeddings implements EmbeddingProvider {
     private readonly model: string,
     private readonly fetchImpl: typeof fetch = fetch,
     private readonly batchSize = 16,
+    private readonly timeoutMs = DEFAULT_EMBED_TIMEOUT_MS,
   ) {
     this.name = `ollama:${model}`;
   }
@@ -28,11 +32,18 @@ export class OllamaEmbeddings implements EmbeddingProvider {
     const out: number[][] = [];
     for (let i = 0; i < texts.length; i += this.batchSize) {
       const input = texts.slice(i, i + this.batchSize);
-      const res = await this.fetchImpl(`${this.baseUrl}/api/embed`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ model: this.model, input }),
-      });
+      let res: Response;
+      try {
+        res = await this.fetchImpl(`${this.baseUrl}/api/embed`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ model: this.model, input }),
+          signal: AbortSignal.timeout(this.timeoutMs),
+        });
+      } catch (err) {
+        if (isTimeout(err)) throw new Error(`Ollama /api/embed timed out after ${this.timeoutMs}ms (${this.baseUrl})`);
+        throw err;
+      }
       if (!res.ok) throw new Error(`Ollama /api/embed failed: ${res.status} ${await res.text()}`);
       let data: { embeddings?: unknown };
       try {
@@ -47,6 +58,11 @@ export class OllamaEmbeddings implements EmbeddingProvider {
     }
     return out;
   }
+}
+
+/** True for the abort reason AbortSignal.timeout() produces. */
+export function isTimeout(err: unknown): boolean {
+  return err instanceof Error && err.name === 'TimeoutError';
 }
 
 /** Deterministic bag-of-words hashing, unit-normalised. For tests and CI only. */

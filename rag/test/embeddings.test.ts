@@ -52,6 +52,13 @@ describe('OllamaEmbeddings', () => {
     await expect(new OllamaEmbeddings('http://o', 'm', fetchImpl).embed(['x'])).rejects.toThrow(/unexpected shape/);
   });
 
+  it('aborts a hung /api/embed after the timeout with a readable error', async () => {
+    const hang = ((_url: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal!.reason)))) as unknown as typeof fetch;
+    const p = new OllamaEmbeddings('http://o', 'm', hang, 16, 50);
+    await expect(p.embed(['x'])).rejects.toThrow(/Ollama \/api\/embed timed out after 50ms/);
+  });
+
   it('throws a readable error on non-JSON 200 body', async () => {
     const fetchImpl = (async () => new Response('not json at all', { status: 200 })) as unknown as typeof fetch;
     await expect(new OllamaEmbeddings('http://o', 'm', fetchImpl).embed(['x'])).rejects.toThrow(/non-JSON body/);

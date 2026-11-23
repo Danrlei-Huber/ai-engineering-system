@@ -32,6 +32,20 @@ describe('collectStatus without infrastructure', () => {
   });
 });
 
+describe('collectStatus ollama check', () => {
+  it('reports a timeout instead of hanging when Ollama never answers', async () => {
+    const hang = ((_url: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal!.reason)))) as unknown as typeof fetch;
+    const status = await collectStatus(
+      { databaseUrl: 'postgres://u:p@h/db', ollamaUrl: 'http://127.0.0.1:1', embedModel: 'bge-m3', embedProvider: 'ollama', defaultProject: undefined },
+      { fetchImpl: hang, ollamaTimeoutMs: 50, distPath: '/definitely/missing/server.js' },
+    );
+    const ollama = status.checks.find((c) => c.name === 'ollama')!;
+    expect(ollama.ok).toBe(false);
+    expect(ollama.detail).toMatch(/timed out after 50ms/);
+  });
+});
+
 describe('collectStatus migrations check', () => {
   const recordingSql = (queries: string[], regclass: string | null) =>
     ((strings: TemplateStringsArray) => {

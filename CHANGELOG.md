@@ -9,6 +9,10 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   invokes a SQL client (`psql`, `mysql`, `sqlite3`, ...), so a commit message or a test filter
   that merely mentions such a statement is no longer denied. Piped SQL and
   `docker exec ... psql -c` stay denied.
+- RAG: Ollama calls now time out instead of hanging the MCP tool forever when the daemon is
+  stuck: `/api/embed` after 60 s (`OllamaEmbeddings` constructor option), the `rag_status`
+  `/api/tags` probe after 5 s (`collectStatus` `ollamaTimeoutMs`). Both report a readable
+  "timed out after" error.
 
 ## [0.1.0] - 2026-09-22
 

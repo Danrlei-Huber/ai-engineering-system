@@ -4,12 +4,14 @@ import { fileURLToPath } from 'node:url';
 import type { RagConfig } from './config.js';
 import { EMBED_DIMENSIONS } from './contract.js';
 import { countChunks, type Db } from './db.js';
-import { assertDimension, type EmbeddingProvider } from './embeddings.js';
+import { assertDimension, isTimeout, type EmbeddingProvider } from './embeddings.js';
 import { pendingMigrationsReadOnly } from './migrate.js';
 
 export interface Check { name: string; ok: boolean; detail: string }
 export interface RagStatus { ok: boolean; checks: Check[] }
 
+/** A health probe should answer quickly; model loading happens on /api/embed, not /api/tags. */
+export const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
 export const DEFAULT_DIST_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'server.js');
 
 async function run(name: string, fn: () => Promise<string>): Promise<Check> {
@@ -22,9 +24,10 @@ async function run(name: string, fn: () => Promise<string>): Promise<Check> {
 
 export async function collectStatus(
   cfg: RagConfig,
-  deps: { sql?: Db; provider?: EmbeddingProvider; fetchImpl?: typeof fetch; distPath?: string } = {},
+  deps: { sql?: Db; provider?: EmbeddingProvider; fetchImpl?: typeof fetch; ollamaTimeoutMs?: number; distPath?: string } = {},
 ): Promise<RagStatus> {
   const fetchImpl = deps.fetchImpl ?? fetch;
+  const ollamaTimeoutMs = deps.ollamaTimeoutMs ?? DEFAULT_STATUS_TIMEOUT_MS;
   const checks: Check[] = [];
 
   checks.push(await run('node', async () => {
@@ -59,7 +62,13 @@ export async function collectStatus(
 
   if (cfg.embedProvider === 'ollama') {
     checks.push(await run('ollama', async () => {
-      const res = await fetchImpl(`${cfg.ollamaUrl}/api/tags`);
+      let res: Response;
+      try {
+        res = await fetchImpl(`${cfg.ollamaUrl}/api/tags`, { signal: AbortSignal.timeout(ollamaTimeoutMs) });
+      } catch (err) {
+        if (isTimeout(err)) throw new Error(`GET /api/tags timed out after ${ollamaTimeoutMs}ms`);
+        throw err;
+      }
       if (!res.ok) throw new Error(`GET /api/tags -> ${res.status}`);
       const data = (await res.json()) as { models?: { name: string }[] };
       const names = (data.models ?? []).map((m) => m.name);
