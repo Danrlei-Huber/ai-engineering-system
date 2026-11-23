@@ -11,6 +11,13 @@
 # deliberately conservative and blocks anything that looks like a write.
 set -euo pipefail
 
+# Fail closed: without jq the guard cannot read its input. Exit 2 is the blocking
+# PreToolUse error, so the call is refused with this message instead of slipping through.
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ai-engineering-system: jq is not installed, so restrict-tester-bash.sh cannot evaluate this call. Install jq (https://jqlang.github.io/jq/) and retry." >&2
+  exit 2
+fi
+
 input="$(cat)"
 tool="$(jq -r '.tool_name // empty' <<<"$input")"
 [[ "$tool" == "Bash" ]] || exit 0

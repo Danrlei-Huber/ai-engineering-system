@@ -52,5 +52,19 @@ for fixture in cases/*/*.json; do
   fi
 done
 
+# Without jq a guard cannot read its input. It must fail closed: exit 2 is the
+# blocking error code for PreToolUse, so the tool call is refused with the
+# script's stderr as the reason. Any other exit code would let the call through.
+for script in ../scripts/block-destructive.sh ../scripts/block-secrets.sh ../scripts/restrict-tester-paths.sh ../scripts/restrict-tester-bash.sh; do
+  rc=0
+  PATH=/nonexistent /bin/bash "$script" < cases/block-destructive/npm-test.json >/dev/null 2>&1 || rc=$?
+  if [[ "$rc" -eq 2 ]]; then
+    pass=$((pass + 1))
+  else
+    fail=$((fail + 1))
+    echo "FAIL ${script} without jq: expected rc=2 (fail closed), got rc=${rc}"
+  fi
+done
+
 echo "hooks: ${pass} passed, ${fail} failed"
 [[ "$fail" -eq 0 ]]

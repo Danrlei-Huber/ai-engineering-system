@@ -13,6 +13,10 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   from Claude Code 2.1.330.
 
 ### Changed
+- Hooks: the four guard scripts fail closed when `jq` is missing (exit 2, the blocking
+  PreToolUse code, with an install hint on stderr) instead of exiting 127, which Claude Code
+  treats as a non-blocking error and lets the call through. `session-banner.sh` warns about it
+  at session start. `hooks/tests/run.sh` asserts the fail-closed exit code for each guard.
 - RAG: `get_source` rebuilds the document with headings at the depth of their path (`Doc > Setup`
   becomes an H2 `Setup`), emitted once per section; it used to print `## <full path>` before
   every chunk.

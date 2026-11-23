@@ -3,6 +3,12 @@
 set -euo pipefail
 
 root="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
+
+# The guard hooks need jq and fail closed without it (exit 2 on every Bash,
+# Edit, Write and Read call), so say so up front rather than one refusal at a time.
+if ! command -v jq >/dev/null 2>&1; then
+  echo "[ai-engineering-system] WARNING: jq is not installed. The guard hooks fail closed, so every Bash, Edit, Write and Read call will be refused until jq is installed (https://jqlang.github.io/jq/)."
+fi
 input="$(cat || true)"
 cwd="$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null || true)"
 [[ -n "$cwd" ]] || cwd="$PWD"

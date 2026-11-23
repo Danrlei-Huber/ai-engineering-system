@@ -14,6 +14,12 @@
 # hook does not block (see tests/run.sh for the budget).
 set -euo pipefail
 
+# Fail closed: without jq the guard cannot read its input. Exit 2 is the blocking
+# PreToolUse error, so the call is refused with this message instead of slipping through.
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ai-engineering-system: jq is not installed, so block-destructive.sh cannot evaluate this call. Install jq (https://jqlang.github.io/jq/) and retry." >&2
+  exit 2
+fi
 
 input="$(cat)"
 tool="$(jq -r '.tool_name // empty' <<<"$input")"
