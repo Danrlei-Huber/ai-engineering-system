@@ -71,7 +71,10 @@ export async function findSource(sql: Db, project: string, collection: Collectio
   return rows[0];
 }
 
-/** Inserts or updates the source row, then replaces all of its chunks. One transaction. */
+/** Rows per INSERT when storing chunks: bounds statement size (an embedding is ~10 KB as text) and parameter count. */
+export const CHUNK_INSERT_BATCH = 100;
+
+/** Inserts or updates the source row, then replaces all of its chunks in batched inserts. One transaction. */
 export async function upsertSourceWithChunks(sql: Db, source: SourceInput, chunks: ChunkInput[]): Promise<string> {
   const id = await sql.begin(async (tx) => {
     const [row] = await tx<{ id: string }[]>`
@@ -82,10 +85,16 @@ export async function upsertSourceWithChunks(sql: Db, source: SourceInput, chunk
       do update set title = excluded.title, sha256 = excluded.sha256, metadata = excluded.metadata, ingested_at = now()
       returning id`;
     await tx`delete from chunks where source_id = ${row.id}`;
-    for (const c of chunks) {
-      await tx`
-        insert into chunks (source_id, position, heading_path, content, content_hash, embedding)
-        values (${row.id}, ${c.position}, ${c.headingPath}, ${c.content}, ${c.contentHash}, ${pgvector.toSql(c.embedding)}::vector)`;
+    for (let i = 0; i < chunks.length; i += CHUNK_INSERT_BATCH) {
+      const rows = chunks.slice(i, i + CHUNK_INSERT_BATCH).map((c) => ({
+        source_id: row.id,
+        position: c.position,
+        heading_path: c.headingPath,
+        content: c.content,
+        content_hash: c.contentHash,
+        embedding: pgvector.toSql(c.embedding),
+      }));
+      await tx`insert into chunks ${tx(rows, 'source_id', 'position', 'heading_path', 'content', 'content_hash', 'embedding')}`;
     }
     return row.id;
   });

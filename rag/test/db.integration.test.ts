@@ -27,6 +27,17 @@ describe.skipIf(!INTEGRATION)('db repository (integration)', () => {
     expect(await countChunks(sql)).toBe(2);
   });
 
+  it('stores more than one insert batch of chunks in order and keeps them searchable', async () => {
+    // The fake embedding hashes tokens into 1024 buckets, so numeric tokens can collide; the last chunk gets unique words.
+    const many = await Promise.all(Array.from({ length: 250 }, (_, i) => chunk(i, 'Big', i === 249 ? 'the final paragraph mentions a zebra' : `paragraph ${i} about batching`)));
+    const id = await upsertSourceWithChunks(sql, { project: 'p1', collection: 'docs', path: 'docs/big.md', title: 'Big', sha256: 'big' }, many);
+    const full = await getSourceWithChunks(sql, id);
+    expect(full?.chunks.map((c) => c.position)).toEqual(many.map((c) => c.position));
+    expect(full?.chunks[249]).toMatchObject({ heading_path: 'Big', content: 'the final paragraph mentions a zebra', content_hash: many[249].contentHash });
+    const [q] = await fake.embed(['zebra']);
+    expect((await searchChunks(sql, q, { projects: ['p1'], collections: ['docs'], limit: 1 }))[0].position).toBe(249);
+  });
+
   it('searches by cosine within project + _global scope and returns scores', async () => {
     await upsertSourceWithChunks(sql, { project: 'p1', collection: 'docs', path: 'docs/pg.md', title: 'PG', sha256: 'a' }, [await chunk(0, 'PG', 'postgres migrations must be reversible')]);
     await upsertSourceWithChunks(sql, { project: '_global', collection: 'standards', path: 'skills/rules/testing/SKILL.md', title: 'Testing', sha256: 'b' }, [await chunk(0, 'Testing', 'every feature ships with tests')]);

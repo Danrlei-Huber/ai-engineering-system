@@ -13,6 +13,9 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   stuck: `/api/embed` after 60 s (`OllamaEmbeddings` constructor option), the `rag_status`
   `/api/tags` probe after 5 s (`collectStatus` `ollamaTimeoutMs`). Both report a readable
   "timed out after" error.
+- RAG: `upsertSourceWithChunks` inserts chunks in batches of 100 rows (`CHUNK_INSERT_BATCH`)
+  instead of one statement per chunk, so ingesting a large document takes a handful of
+  round-trips rather than hundreds.
 
 ## [0.1.0] - 2026-09-22
 
