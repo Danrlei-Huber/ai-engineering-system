@@ -1,7 +1,7 @@
 {
   "name": "ai-engineering-local",
   "description": "Local marketplace for ai-engineering-system plugin.",
-  "owner": { "name": "Jose Azocar" },
+  "owner": { "name": "Danrlei Huber" },
   "plugins": [
     {
       "name": "ai-engineering-system",

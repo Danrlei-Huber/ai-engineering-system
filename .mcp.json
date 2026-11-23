@@ -9,7 +9,7 @@
         "LOG_LEVEL": "error",
         "DISABLE_CONSOLE_OUTPUT": "true",
         "N8N_API_URL": "${N8N_API_URL:-http://localhost:5678}",
-        "N8N_API_KEY": "${N8N_API_KEY}"
+        "N8N_API_KEY": "${N8N_API_KEY:-}"
       }
     },
     "engineering-rag": {
