@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # PreToolUse guard for Edit/Write/MultiEdit/Read:
-#  - deny any access to .env* files except .env.example
+#  - deny any access to .env* files, except the documented templates
+#    (.env.example, .env.sample, .env.template, .env.dist) and direnv's .envrc,
+#    which holds shell setup, not secrets
 #  - deny writing content that looks like a credential
 set -euo pipefail
 
@@ -22,9 +24,10 @@ deny() {
 
 path="$(jq -r '(.tool_input | objects | .file_path) // empty' <<<"$input")"
 base="$(basename -- "$path")"
-if [[ "$base" == .env* && "$base" != ".env.example" ]]; then
-  deny "Access to ${base} is blocked. Secrets stay out of agent reach; document variables in .env.example instead."
-fi
+case "$base" in
+  .env.example | .env.sample | .env.template | .env.dist | .envrc) ;;
+  .env*) deny "Access to ${base} is blocked. Secrets stay out of agent reach; document variables in .env.example instead." ;;
+esac
 
 [[ "$tool" == "Read" ]] && exit 0
 

@@ -37,9 +37,12 @@ deny() { # deny <what-was-detected>
 norm="$(tr -s '[:space:]' ' ' <<<"$cmd")"
 
 # Output redirection. Strip the read-only stream plumbing the tester legitimately
-# needs first; any remaining `>` (including `>>`) is a write.
+# needs first (merging or discarding a stream, writing a message to stderr); any
+# remaining `>` (including `>>`) is a write.
 redir="$norm"
 redir="${redir//2>&1/}"
+redir="${redir//1>&2/}"
+redir="${redir//>&2/}"
 redir="${redir//2>\/dev\/null/}"
 redir="${redir//&>\/dev\/null/}"
 redir="${redir//> \/dev\/null/}"
@@ -50,7 +53,28 @@ esac
 
 # File-writing utilities and git commands that overwrite the working tree.
 if grep -Eq '(^|[^[:alnum:]_.-])tee( |$)' <<<"$norm"; then deny "tee"; fi
-if grep -Eq '(^|[^[:alnum:]_.-])sed +(-[a-zA-Z]*i|--in-place)' <<<"$norm"; then deny "sed in-place"; fi
+# In-place editors: `sed` with an `-i` anywhere among its flags (`-i`, `-i.bak`,
+# `-ni`, `-E -i`, `-e '...' -i`, `--in-place`) and `perl -i` / `-pi` / `-pi.bak`.
+# The flag is looked for token by token up to the next shell separator, because
+# it need not be the first flag after the command word.
+read -r -a words <<<"$norm"
+editor=""
+for word in "${words[@]}"; do
+  w="${word#[\"\']}"
+  case "$w" in
+    sed | perl | */sed | */perl) editor="${w##*/}"; continue ;;
+    '|' | '||' | '&&' | ';' | '|'* | *';' | *'&&' | *'||') editor=""; continue ;;
+  esac
+  [[ -n "$editor" ]] || continue
+  # Globs, not regexes: `-i*` is `-i` and `-i.bak`; `-[a-zA-Z]*i` is a letter
+  # cluster ending in i (`-ni`, `-Ei`, `-pi`); `-[a-zA-Z]*i.*` is that cluster
+  # with a backup suffix (`-pi.bak`). `-Ilib` or `-e` match none of them.
+  case "$w" in
+    --in-place*) deny "${editor} in-place" ;;
+    --*) ;;
+    -i* | -[a-zA-Z]*i | -[a-zA-Z]*i.*) deny "${editor} in-place" ;;
+  esac
+done
 if grep -Eq '(^|[^[:alnum:]_.-])(mv|cp|patch|rm|truncate|dd) +' <<<"$norm"; then deny "a file-writing utility"; fi
 # Git global flags may sit between `git` and the subcommand (`git -C x stash`),
 # so skip the value-taking and standalone globals before matching it.

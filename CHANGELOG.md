@@ -17,6 +17,8 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   PreToolUse code, with an install hint on stderr) instead of exiting 127, which Claude Code
   treats as a non-blocking error and lets the call through. `session-banner.sh` warns about it
   at session start. `hooks/tests/run.sh` asserts the fail-closed exit code for each guard.
+- Hooks: `block-secrets.sh` lets the env templates `.env.sample`, `.env.template` and
+  `.env.dist` and direnv's `.envrc` through, alongside `.env.example`; they hold no secrets.
 - RAG: `get_source` rebuilds the document with headings at the depth of their path (`Doc > Setup`
   becomes an H2 `Setup`), emitted once per section; it used to print `## <full path>` before
   every chunk.
@@ -44,6 +46,9 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   commands. A 49 KB command took 5.7 s, over half the 10 s hook timeout after which a hook
   no longer blocks; it now takes about 20 ms. `hooks/tests/run.sh` fails any fixture over a
   3 s budget (`HOOK_BUDGET_MS`), with a 19 KB fixture to keep it honest.
+- `restrict-tester-bash.sh`: in-place edits are found token by token after `sed` or
+  `perl`, so `sed -E -i`, `sed -e '...' -i` and `perl -pi -e` are denied; `>&2` and `1>&2`
+  no longer count as output redirection, so a message to stderr is allowed.
 - `block-destructive.sh` applies the destructive-SQL guard (DROP/TRUNCATE) only when the command
   invokes a SQL client (`psql`, `mysql`, `sqlite3`, ...), so a commit message or a test filter
   that merely mentions such a statement is no longer denied. Piped SQL and
