@@ -12,3 +12,6 @@ evals/results/
 
 # local claude state
 .claude/settings.local.json
+
+# graphify knowledge graph output
+graphify-out/
