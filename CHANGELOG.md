@@ -40,6 +40,12 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 - RAG: `pruneSources` takes the path prefix literally; `_` and `%` in a directory name
   (`docs_v1/`) no longer act as LIKE wildcards, which could have pruned a sibling directory.
 
+### Security
+- RAG: `@modelcontextprotocol/server` 2.0.0 -> 2.4.0 and `zod` -> 4.6.7, clearing the
+  `npm audit --omit=dev` advisories (GHSA-jm63-cq47-j5jp, GHSA-46jr-4wx8-v453,
+  GHSA-rvq5-wwqv-78pq, GHSA-f897-62hf-6gxq, GHSA-mrhx-c7xc-m3w5). The MCP ones concern HTTP
+  transports; this server speaks stdio only.
+
 ## [0.1.0] - 2026-09-22
 
 ### Added
