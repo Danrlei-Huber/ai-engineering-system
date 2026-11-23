@@ -9,6 +9,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
     "test": "vitest run",
     "test:integration": "RAG_RUN_INTEGRATION=1 vitest run",
     "migrate": "tsx src/cli/migrate.ts",
@@ -26,10 +27,13 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@modelcontextprotocol/client": "2.4.0",
     "@types/node": "^22.0.0",
+    "eslint": "^10.15.0",
     "tsx": "^4.23.0",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.74.0",
     "vitest": "^5.0.1"
   }
 }
