@@ -143,12 +143,17 @@ export async function getSourceWithChunks(sql: Db, id: string): Promise<{ source
   return { source, chunks };
 }
 
-/** Deletes path-based sources under `pathPrefix` whose path is not in `keepOrigins`. Returns deleted paths. */
+/** Escapes LIKE metacharacters so a directory name such as `docs_v1/` matches literally. */
+function likePrefix(prefix: string): string {
+  return prefix.replace(/[\\%_]/g, (c) => `\\${c}`) + '%';
+}
+
+/** Deletes path-based sources under `pathPrefix` (taken literally) whose path is not in `keepOrigins`. Returns deleted paths. */
 export async function pruneSources(sql: Db, project: string, collection: Collection, pathPrefix: string, keepOrigins: string[]): Promise<string[]> {
   const rows = await sql<{ path: string }[]>`
     delete from sources
     where project = ${project} and collection = ${collection}
-      and path is not null and path like ${pathPrefix + '%'}
+      and path is not null and path like ${likePrefix(pathPrefix)} escape '\\'
       and path <> all(${keepOrigins})
     returning path`;
   return rows.map((r) => r.path).sort();

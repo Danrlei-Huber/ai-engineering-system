@@ -37,6 +37,8 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   least as long as the opening one, per CommonMark; a `~~~` line inside a backtick block, or a
   shorter run, no longer ends it. `extractTitle` skips `#` lines inside fences, so a shell
   comment in a code block preceding the H1 is no longer taken as the document title.
+- RAG: `pruneSources` takes the path prefix literally; `_` and `%` in a directory name
+  (`docs_v1/`) no longer act as LIKE wildcards, which could have pruned a sibling directory.
 
 ## [0.1.0] - 2026-09-22
 

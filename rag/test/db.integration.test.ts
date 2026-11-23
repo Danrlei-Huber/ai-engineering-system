@@ -79,4 +79,13 @@ describe.skipIf(!INTEGRATION)('db repository (integration)', () => {
     expect(deleted).toEqual(['docs/b.md']);
     expect((await listSources(sql, { project: 'p1' })).map((s) => s.path).sort()).toEqual(['docs/a.md', 'other/c.md']);
   });
+
+  it('treats _ and % in the path prefix literally, not as LIKE wildcards', async () => {
+    for (const p of ['docs_v1/a.md', 'docsXv1/b.md', 'docs%v1/c.md', 'docs/d.md']) {
+      await upsertSourceWithChunks(sql, { project: 'p1', collection: 'docs', path: p, title: p, sha256: 'a' }, [await chunk(0, '', p)]);
+    }
+    expect(await pruneSources(sql, 'p1', 'docs', 'docs_v1/', [])).toEqual(['docs_v1/a.md']);
+    expect(await pruneSources(sql, 'p1', 'docs', 'docs%v1/', [])).toEqual(['docs%v1/c.md']);
+    expect((await listSources(sql, { project: 'p1' })).map((s) => s.path).sort()).toEqual(['docs/d.md', 'docsXv1/b.md']);
+  });
 });
