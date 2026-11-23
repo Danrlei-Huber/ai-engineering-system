@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
-import { createDb } from '../src/db.js';
+import { createDb, type Db } from '../src/db.js';
 import { FakeEmbeddings, type EmbeddingProvider } from '../src/embeddings.js';
 import { start } from '../src/server.js';
 
@@ -62,7 +63,7 @@ describe('start', () => {
     const [ct, st] = InMemoryTransport.createLinkedPair();
     const exits: number[] = [];
     const logs: string[] = [];
-    const down: EmbeddingProvider = { name: 'down', embed: async () => { throw new Error('fetch failed'); } };
+    const down: EmbeddingProvider = { name: 'down', embed: () => Promise.reject(new Error('fetch failed')) };
     await start({ deps: { sql, provider: down, cfg }, transport: st, exit: (code) => { exits.push(code); }, log: (m) => logs.push(m) });
     expect(exits).toEqual([]);
     expect(logs.join('\n')).toMatch(/embedding provider unavailable at startup: fetch failed/);
@@ -70,5 +71,30 @@ describe('start', () => {
     await client.connect(ct);
     await client.close();
     await sql.end({ timeout: 1 });
+  });
+
+  it('reports the package.json version to the client', async () => {
+    const { version } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
+    const sql = createDb(cfg.databaseUrl);
+    const [ct, st] = InMemoryTransport.createLinkedPair();
+    await start({ deps: { sql, provider: new FakeEmbeddings(), cfg }, transport: st, exit: () => {}, log: () => {} });
+    const client = new Client({ name: 't', version: '0' });
+    await client.connect(ct);
+    expect(client.getServerVersion()?.version).toBe(version);
+    await client.close();
+    await sql.end({ timeout: 1 });
+  });
+
+  it('ends the database pool and exits 0 when the transport closes', async () => {
+    const end = vi.fn(async () => {});
+    const sql = { end } as unknown as Db;
+    const [ct, st] = InMemoryTransport.createLinkedPair();
+    const exits: number[] = [];
+    await start({ deps: { sql, provider: new FakeEmbeddings(), cfg }, transport: st, exit: (code) => { exits.push(code); }, log: () => {} });
+    const client = new Client({ name: 't', version: '0' });
+    await client.connect(ct);
+    await client.close();
+    await vi.waitFor(() => expect(exits).toEqual([0]));
+    expect(end).toHaveBeenCalledTimes(1);
   });
 });

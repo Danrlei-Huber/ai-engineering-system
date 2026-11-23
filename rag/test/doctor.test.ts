@@ -19,7 +19,7 @@ describe('collectStatus without infrastructure', () => {
     const sql = createDb('postgres://nobody:x@127.0.0.1:1/none');
     const status = await collectStatus(
       { databaseUrl: 'postgres://nobody:x@127.0.0.1:1/none', ollamaUrl: 'http://127.0.0.1:1', embedModel: 'bge-m3', embedProvider: 'fake', defaultProject: undefined },
-      { sql, provider: new FakeEmbeddings(), fetchImpl: (async () => { throw new Error('fetch failed'); }) as unknown as typeof fetch, distPath: '/definitely/missing/server.js' },
+      { sql, provider: new FakeEmbeddings(), fetchImpl: (() => Promise.reject(new Error('fetch failed'))) as unknown as typeof fetch, distPath: '/definitely/missing/server.js' },
     );
     await sql.end();
     const byName = Object.fromEntries(status.checks.map((c) => [c.name, c]));
@@ -32,10 +32,24 @@ describe('collectStatus without infrastructure', () => {
   });
 });
 
+describe('collectStatus error reporting', () => {
+  it('reports a thrown non-Error value as text instead of "undefined"', async () => {
+    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- the non-Error reason is what this test is about
+    const sql = (() => Promise.reject('boom')) as unknown as ReturnType<typeof createDb>;
+    const status = await collectStatus(
+      { databaseUrl: 'postgres://u:p@h/db', ollamaUrl: 'http://127.0.0.1:1', embedModel: 'bge-m3', embedProvider: 'fake', defaultProject: undefined },
+      { sql, distPath: '/definitely/missing/server.js' },
+    );
+    const pg = status.checks.find((c) => c.name === 'postgres')!;
+    expect(pg.ok).toBe(false);
+    expect(pg.detail).toBe('boom');
+  });
+});
+
 describe('collectStatus ollama check', () => {
   it('reports a timeout instead of hanging when Ollama never answers', async () => {
-    const hang = ((_url: string | URL | Request, init?: RequestInit) =>
-      new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal!.reason)))) as unknown as typeof fetch;
+    const hang = (_url: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal?.reason as Error)));
     const status = await collectStatus(
       { databaseUrl: 'postgres://u:p@h/db', ollamaUrl: 'http://127.0.0.1:1', embedModel: 'bge-m3', embedProvider: 'ollama', defaultProject: undefined },
       { fetchImpl: hang, ollamaTimeoutMs: 50, distPath: '/definitely/missing/server.js' },

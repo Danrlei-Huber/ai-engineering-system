@@ -98,7 +98,7 @@ export async function upsertSourceWithChunks(sql: Db, source: SourceInput, chunk
     }
     return row.id;
   });
-  return id as string;
+  return id;
 }
 
 export interface SearchOptions {

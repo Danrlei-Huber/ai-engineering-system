@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { assertUrlTarget, listMarkdownFiles, parseIngestArgs } from '../src/ingest.js';
+import { FakeEmbeddings } from '../src/embeddings.js';
+import type { Db } from '../src/db.js';
+import { assertUrlTarget, ingest, listMarkdownFiles, parseIngestArgs } from '../src/ingest.js';
 
 describe('listMarkdownFiles', () => {
   it('walks directories recursively, skipping node_modules and .git, and accepts a single file', () => {
@@ -24,11 +26,15 @@ describe('listMarkdownFiles', () => {
 describe('parseIngestArgs', () => {
   it('parses flags and positionals', () => {
     const o = parseIngestArgs(['--project', 'p', '--collection', 'decisions', '--prune', 'docs/decisions', 'README.md'], { defaultProject: undefined, cwd: '/w' });
-    expect(o).toEqual({ project: 'p', collection: 'decisions', targets: ['docs/decisions', 'README.md'], root: '/w', prune: true, url: undefined, title: undefined, metadata: undefined });
+    expect(o).toStrictEqual({ project: 'p', collection: 'decisions', targets: ['docs/decisions', 'README.md'], root: '/w', prune: true, url: undefined, title: undefined });
   });
   it('defaults project from config and root from cwd, and honours --root', () => {
     expect(parseIngestArgs(['--collection', 'docs', 'docs'], { defaultProject: 'farm', cwd: '/w' }).project).toBe('farm');
     expect(parseIngestArgs(['--root', '/elsewhere', '--collection', 'docs', 'docs'], { defaultProject: 'farm', cwd: '/w' }).root).toBe('/elsewhere');
+  });
+  it('only parses: --url with a target that does not exist is accepted here and rejected by ingest()', () => {
+    const o = parseIngestArgs(['--project', 'p', '--collection', 'external', '--url', 'https://x', '--title', 't', 'missing.md'], { defaultProject: undefined, cwd: '/w' });
+    expect(o).toMatchObject({ url: 'https://x', title: 't', targets: ['missing.md'] });
   });
   it('rejects unknown collections, missing project, missing targets, and --url with several targets', () => {
     expect(() => parseIngestArgs(['--project', 'p', '--collection', 'nope', 'x'], { defaultProject: undefined, cwd: '/w' })).toThrow(/collection must be one of docs, decisions, standards, external/);
@@ -53,5 +59,22 @@ describe('assertUrlTarget', () => {
   it('rejects several targets and a missing one', () => {
     expect(() => assertUrlTarget(root, ['docs/a.md', 'docs'])).toThrow(/--url requires exactly one file target$/);
     expect(() => assertUrlTarget(root, ['docs/nope.md'])).toThrow(/does not exist/);
+  });
+});
+
+describe('ingest validation before any database access', () => {
+  const noDb = null as unknown as Db;
+  const fake = new FakeEmbeddings();
+  const root = mkdtempSync(join(tmpdir(), 'rag-ing-val-'));
+  writeFileSync(join(root, 'inside.md'), '# in');
+  const outside = mkdtempSync(join(tmpdir(), 'rag-ing-out-'));
+  writeFileSync(join(outside, 'o.md'), '# out');
+
+  it('rejects a --url target that does not exist', async () => {
+    await expect(ingest(noDb, fake, { project: 'p', collection: 'external', targets: ['nope.md'], root, url: 'https://x' })).rejects.toThrow(/does not exist/);
+  });
+  it('rejects path-based targets outside --root, since stored paths are root-relative', async () => {
+    await expect(ingest(noDb, fake, { project: 'p', collection: 'docs', targets: [join(outside, 'o.md')], root })).rejects.toThrow(/outside --root/);
+    await expect(ingest(noDb, fake, { project: 'p', collection: 'docs', targets: ['../' + outside.split('/').pop()], root })).rejects.toThrow(/outside --root/);
   });
 });

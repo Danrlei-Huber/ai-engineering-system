@@ -3,7 +3,7 @@ import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { createDb } from '../src/db.js';
 import { FakeEmbeddings } from '../src/embeddings.js';
 import { buildServer } from '../src/server.js';
-import { describeError } from '../src/tools.js';
+import { describeError, rebuildDocument } from '../src/tools.js';
 
 const cfg = { databaseUrl: 'postgres://nobody:x@127.0.0.1:1/none', ollamaUrl: 'http://127.0.0.1:1', embedModel: 'bge-m3', embedProvider: 'fake' as const, defaultProject: 'demo' };
 
@@ -51,5 +51,21 @@ describe('describeError', () => {
     expect(describeError(new Error('connect ECONNREFUSED 127.0.0.1:5433'))).toMatch(/RAG database unreachable/);
     expect(describeError(new Error('fetch failed: http://localhost:11434/api/embed'))).toMatch(/Ollama unreachable/);
     expect(describeError(new Error('weird'))).toMatch(/RAG error: weird.*npm run doctor/);
+  });
+});
+
+describe('rebuildDocument', () => {
+  it('emits each heading once, at the depth of its path, and keeps pre-heading text bare', () => {
+    const doc = rebuildDocument([
+      { position: 0, heading_path: '', content: 'preamble', content_hash: '' },
+      { position: 1, heading_path: 'Doc', content: 'intro', content_hash: '' },
+      { position: 2, heading_path: 'Doc > Setup', content: 'first half', content_hash: '' },
+      { position: 3, heading_path: 'Doc > Setup', content: 'second half', content_hash: '' },
+      { position: 4, heading_path: 'Doc > Setup > Docker', content: 'compose', content_hash: '' },
+    ]);
+    expect(doc).toBe('preamble\n\n# Doc\n\nintro\n\n## Setup\n\nfirst half\n\nsecond half\n\n### Docker\n\ncompose');
+  });
+  it('caps the heading depth at six', () => {
+    expect(rebuildDocument([{ position: 0, heading_path: 'a > b > c > d > e > f > g', content: 'x', content_hash: '' }])).toBe('###### g\n\nx');
   });
 });

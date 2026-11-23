@@ -23,9 +23,9 @@ describe('FakeEmbeddings', () => {
 
 describe('OllamaEmbeddings', () => {
   function mockFetch(dims: number) {
-    return vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body)) as { model: string; input: string[] };
-      return new Response(JSON.stringify({ model: body.model, embeddings: body.input.map(() => new Array(dims).fill(0.1)) }), { status: 200 });
+    return vi.fn((_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(init?.body as string) as { model: string; input: string[] };
+      return Promise.resolve(new Response(JSON.stringify({ model: body.model, embeddings: body.input.map(() => new Array(dims).fill(0.1)) }), { status: 200 }));
     }) as unknown as typeof fetch;
   }
 
@@ -37,30 +37,31 @@ describe('OllamaEmbeddings', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     const [url, init] = (fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
     expect(url).toBe('http://ollama:11434/api/embed');
-    expect(JSON.parse(String(init.body))).toMatchObject({ model: 'bge-m3' });
-    expect(JSON.parse(String(init.body)).input).toHaveLength(16);
+    const sent = JSON.parse(init.body as string) as { model: string; input: string[] };
+    expect(sent).toMatchObject({ model: 'bge-m3' });
+    expect(sent.input).toHaveLength(16);
   });
 
   it('throws a readable error on non-2xx', async () => {
-    const fetchImpl = (async () => new Response('model not found', { status: 404 })) as unknown as typeof fetch;
+    const fetchImpl = (() => Promise.resolve(new Response('model not found', { status: 404 }))) as unknown as typeof fetch;
     const p = new OllamaEmbeddings('http://ollama:11434', 'bge-m3', fetchImpl);
     await expect(p.embed(['x'])).rejects.toThrow(/Ollama \/api\/embed failed: 404/);
   });
 
   it('throws when the response shape is wrong', async () => {
-    const fetchImpl = (async () => new Response(JSON.stringify({ nope: true }), { status: 200 })) as unknown as typeof fetch;
+    const fetchImpl = (() => Promise.resolve(new Response(JSON.stringify({ nope: true }), { status: 200 }))) as unknown as typeof fetch;
     await expect(new OllamaEmbeddings('http://o', 'm', fetchImpl).embed(['x'])).rejects.toThrow(/unexpected shape/);
   });
 
   it('aborts a hung /api/embed after the timeout with a readable error', async () => {
-    const hang = ((_url: string | URL | Request, init?: RequestInit) =>
-      new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal!.reason)))) as unknown as typeof fetch;
+    const hang = (_url: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal?.reason as Error)));
     const p = new OllamaEmbeddings('http://o', 'm', hang, 16, 50);
     await expect(p.embed(['x'])).rejects.toThrow(/Ollama \/api\/embed timed out after 50ms/);
   });
 
   it('throws a readable error on non-JSON 200 body', async () => {
-    const fetchImpl = (async () => new Response('not json at all', { status: 200 })) as unknown as typeof fetch;
+    const fetchImpl = (() => Promise.resolve(new Response('not json at all', { status: 200 }))) as unknown as typeof fetch;
     await expect(new OllamaEmbeddings('http://o', 'm', fetchImpl).embed(['x'])).rejects.toThrow(/non-JSON body/);
   });
 });

@@ -41,7 +41,7 @@ export class OllamaEmbeddings implements EmbeddingProvider {
           signal: AbortSignal.timeout(this.timeoutMs),
         });
       } catch (err) {
-        if (isTimeout(err)) throw new Error(`Ollama /api/embed timed out after ${this.timeoutMs}ms (${this.baseUrl})`);
+        if (isTimeout(err)) throw new Error(`Ollama /api/embed timed out after ${this.timeoutMs}ms (${this.baseUrl})`, { cause: err });
         throw err;
       }
       if (!res.ok) throw new Error(`Ollama /api/embed failed: ${res.status} ${await res.text()}`);
@@ -69,8 +69,8 @@ export function isTimeout(err: unknown): boolean {
 export class FakeEmbeddings implements EmbeddingProvider {
   readonly name = 'fake';
   constructor(private readonly dims = EMBED_DIMENSIONS) {}
-  async embed(texts: string[]): Promise<number[][]> {
-    return texts.map((t) => fakeVector(t, this.dims));
+  embed(texts: string[]): Promise<number[][]> {
+    return Promise.resolve(texts.map((t) => fakeVector(t, this.dims)));
   }
 }
 

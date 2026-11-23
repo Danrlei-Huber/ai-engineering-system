@@ -36,6 +36,21 @@ describe.skipIf(!INTEGRATION)('MCP server (integration)', () => {
     expect(hits[0].score).toBeGreaterThan(0);
   });
 
+  it('searches every project when no project is known (no RAG_PROJECT, no project.yaml)', async () => {
+    const [e3] = await fake.embed(['PG\n\npostgres migrations must be reversible']);
+    await upsertSourceWithChunks(sql, { project: 'p2', collection: 'decisions', path: 'docs/decisions/ADR-009.md', title: 'ADR-009', sha256: 'c' }, [{ position: 0, headingPath: 'PG', content: 'postgres migrations must be reversible', contentHash: 'h3', embedding: e3 }]);
+    const anon = buildServer({ sql, provider: fake, cfg: { ...cfg, defaultProject: undefined } });
+    const [ct, st] = InMemoryTransport.createLinkedPair();
+    await anon.connect(st);
+    const anonClient = new Client({ name: 't2', version: '0' });
+    await anonClient.connect(ct);
+    const hits = JSON.parse(text(await anonClient.callTool({ name: 'search_knowledge', arguments: { query: 'reversible migrations' } }))) as { project: string }[];
+    expect([...new Set(hits.map((h) => h.project))].sort()).toEqual(['_global', 'p1', 'p2']);
+    const scoped = JSON.parse(text(await client.callTool({ name: 'search_knowledge', arguments: { query: 'reversible migrations' } }))) as { project: string }[];
+    expect(scoped.map((h) => h.project)).not.toContain('p2');
+    await anonClient.close();
+  });
+
   it('filters by collections', async () => {
     const hits = JSON.parse(text(await client.callTool({ name: 'search_knowledge', arguments: { query: 'tests', collections: ['standards'] } }))) as { collection: string }[];
     expect(hits.map((h) => h.collection)).toEqual(['standards']);

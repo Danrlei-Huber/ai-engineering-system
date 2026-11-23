@@ -1,6 +1,6 @@
 import type { RagConfig } from './config.js';
 import { COLLECTIONS, GLOBAL_PROJECT, type Collection } from './contract.js';
-import { getSourceWithChunks, listSources, searchChunks, type Db, type SearchHit, type SourceSummary } from './db.js';
+import { getSourceWithChunks, listSources, searchChunks, type Db, type SearchHit, type SourceSummary, type StoredChunk } from './db.js';
 import type { EmbeddingProvider } from './embeddings.js';
 import { collectStatus, type RagStatus } from './status.js';
 
@@ -40,11 +40,28 @@ export class SourceNotFoundError extends Error {
   }
 }
 
+/**
+ * Rebuilds readable markdown from ordered chunks: each heading appears once, at the depth of its
+ * path ("Doc > Setup" is an H2 "Setup"), so a section split into several chunks is not re-titled.
+ */
+export function rebuildDocument(chunks: StoredChunk[]): string {
+  const parts: string[] = [];
+  let previous: string | undefined;
+  for (const chunk of chunks) {
+    if (chunk.heading_path && chunk.heading_path !== previous) {
+      const segments = chunk.heading_path.split(' > ');
+      parts.push(`${'#'.repeat(Math.min(segments.length, 6))} ${segments[segments.length - 1]}`);
+    }
+    previous = chunk.heading_path;
+    parts.push(chunk.content);
+  }
+  return parts.join('\n\n');
+}
+
 export async function getSourceTool(deps: ToolDeps, args: { source_id: string }) {
   const found = await getSourceWithChunks(deps.sql, args.source_id);
   if (!found) throw new SourceNotFoundError(args.source_id);
-  const document = found.chunks.map((c) => (c.heading_path ? `## ${c.heading_path}\n\n${c.content}` : c.content)).join('\n\n');
-  return { ...found, document };
+  return { ...found, document: rebuildDocument(found.chunks) };
 }
 
 export async function ragStatusTool(deps: ToolDeps): Promise<RagStatus> {

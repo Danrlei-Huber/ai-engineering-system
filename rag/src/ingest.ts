@@ -18,7 +18,6 @@ export interface IngestOptions {
   url?: string;
   title?: string;
   prune?: boolean;
-  metadata?: Record<string, unknown>;
 }
 
 export interface IngestReport {
@@ -60,8 +59,18 @@ export function assertUrlTarget(root: string, targets: string[]): void {
   if (!statSync(abs).isFile()) throw new Error('--url requires exactly one file target (got a directory)');
 }
 
+/** Stored paths are root-relative, so a path-based target must live under `root`. */
+export function assertInsideRoot(root: string, targets: string[]): void {
+  for (const target of targets) {
+    const abs = isAbsolute(target) ? target : resolve(root, target);
+    const rel = relative(root, abs);
+    if (rel === '..' || rel.startsWith('..' + sep) || isAbsolute(rel)) throw new Error(`target is outside --root (${root}): ${target}`);
+  }
+}
+
 export async function ingest(sql: Db, provider: EmbeddingProvider, opts: IngestOptions, log: (line: string) => void = () => {}): Promise<IngestReport> {
   if (opts.url) assertUrlTarget(opts.root, opts.targets);
+  else assertInsideRoot(opts.root, opts.targets);
   const report: IngestReport = { ingested: [], skipped: [], pruned: [] };
   const seen: string[] = [];
 
@@ -83,7 +92,7 @@ export async function ingest(sql: Db, provider: EmbeddingProvider, opts: IngestO
 
       const chunks = chunkMarkdown(text);
       const vectors = chunks.length ? await provider.embed(chunks.map(embedText)) : [];
-      const metadata: Record<string, unknown> = { ...(opts.metadata ?? {}) };
+      const metadata: Record<string, unknown> = {};
       if (opts.url) metadata.retrieved_at = new Date().toISOString();
 
       await upsertSourceWithChunks(
@@ -139,7 +148,8 @@ export function parseIngestArgs(argv: string[], ctx: { defaultProject: string | 
   if (!isCollection(collection)) throw new Error(`--collection must be one of ${COLLECTIONS.join(', ')}`);
   if (positionals.length === 0) throw new Error('at least one target (file or directory) is required');
   const root = values.root ? resolve(ctx.cwd, values.root) : ctx.cwd;
-  if (values.url) assertUrlTarget(root, positionals);
+  // Shape only; whether the file exists is checked by ingest(), which owns the filesystem rules.
+  if (values.url && positionals.length !== 1) throw new Error('--url requires exactly one file target');
   return {
     project,
     collection,
@@ -148,6 +158,5 @@ export function parseIngestArgs(argv: string[], ctx: { defaultProject: string | 
     url: values.url,
     title: values.title,
     prune: values.prune ?? false,
-    metadata: undefined,
   };
 }

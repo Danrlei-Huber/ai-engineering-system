@@ -1,5 +1,6 @@
 import { McpServer, type Transport } from '@modelcontextprotocol/server';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import * as z from 'zod';
 import { loadConfig } from './config.js';
@@ -8,7 +9,8 @@ import { createDb } from './db.js';
 import { DimensionMismatchError, assertDimension, createEmbeddingProvider } from './embeddings.js';
 import { describeError, getSourceTool, listSourcesTool, ragStatusTool, searchKnowledge, type ToolDeps } from './tools.js';
 
-const SERVER_VERSION = '0.1.0';
+/** Single source of truth for the version: rag/package.json, one level up from src/ and dist/ alike. */
+const { version: SERVER_VERSION } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { version: string };
 
 function ok(data: unknown) {
   return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
@@ -79,6 +81,10 @@ export interface StartOptions {
  */
 export async function start({ deps, transport, exit = (code) => process.exit(code), log = (line) => console.error(line) }: StartOptions): Promise<McpServer> {
   const server = buildServer(deps);
+  // The client closing stdin is the shutdown signal: release the pool so the process can exit.
+  server.server.onclose = () => {
+    void deps.sql.end({ timeout: 1 }).catch(() => undefined).finally(() => exit(0));
+  };
   await server.connect(transport);
   log(`[engineering-rag] v${SERVER_VERSION} ready (project: ${deps.cfg.defaultProject ?? 'none'}, provider: ${deps.provider.name})`);
 

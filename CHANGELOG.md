@@ -9,6 +9,12 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   from Claude Code 2.1.330.
 
 ### Changed
+- RAG: `get_source` rebuilds the document with headings at the depth of their path (`Doc > Setup`
+  becomes an H2 `Setup`), emitted once per section; it used to print `## <full path>` before
+  every chunk.
+- RAG: `ingest` rejects path-based targets outside `--root`, since stored paths are
+  root-relative; `parseIngestArgs` only validates argument shape and leaves filesystem checks
+  to `ingest()`. The unused `IngestOptions.metadata` was removed.
 - The repository's own development instructions moved from `CLAUDE.md` to `.claude/CLAUDE.md`.
   Claude Code loads both locations; the plugin validator warns about a root `CLAUDE.md`
   because it is not shipped as plugin context. `claude plugin validate --strict` passes on
@@ -39,6 +45,10 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   comment in a code block preceding the H1 is no longer taken as the document title.
 - RAG: `pruneSources` takes the path prefix literally; `_` and `%` in a directory name
   (`docs_v1/`) no longer act as LIKE wildcards, which could have pruned a sibling directory.
+- RAG: the MCP server ends its connection pool and exits 0 when the client closes the stdio
+  transport; it used to linger until killed. The server version is read from `package.json`
+  instead of a duplicated constant, and a status check that throws a non-Error value reports
+  it as text instead of "undefined".
 - RAG: the CLIs and the MCP server read `rag/.env`, the same file docker compose reads, and
   derive the database and Ollama URLs from `RAG_DB_USER`, `RAG_DB_PASSWORD`, `RAG_DB_NAME`,
   `RAG_DB_PORT` and `OLLAMA_PORT`. Changing a port or password there used to break

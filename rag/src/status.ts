@@ -14,11 +14,11 @@ export interface RagStatus { ok: boolean; checks: Check[] }
 export const DEFAULT_STATUS_TIMEOUT_MS = 5_000;
 export const DEFAULT_DIST_PATH = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist', 'server.js');
 
-async function run(name: string, fn: () => Promise<string>): Promise<Check> {
+async function run(name: string, fn: () => string | Promise<string>): Promise<Check> {
   try {
     return { name, ok: true, detail: await fn() };
   } catch (err) {
-    return { name, ok: false, detail: (err as Error).message };
+    return { name, ok: false, detail: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -30,7 +30,7 @@ export async function collectStatus(
   const ollamaTimeoutMs = deps.ollamaTimeoutMs ?? DEFAULT_STATUS_TIMEOUT_MS;
   const checks: Check[] = [];
 
-  checks.push(await run('node', async () => {
+  checks.push(await run('node', () => {
     const major = Number(process.versions.node.split('.')[0]);
     if (major < 22) throw new Error(`v${process.versions.node} (need >= 22)`);
     return `v${process.versions.node}`;
@@ -66,7 +66,7 @@ export async function collectStatus(
       try {
         res = await fetchImpl(`${cfg.ollamaUrl}/api/tags`, { signal: AbortSignal.timeout(ollamaTimeoutMs) });
       } catch (err) {
-        if (isTimeout(err)) throw new Error(`GET /api/tags timed out after ${ollamaTimeoutMs}ms`);
+        if (isTimeout(err)) throw new Error(`GET /api/tags timed out after ${ollamaTimeoutMs}ms`, { cause: err });
         throw err;
       }
       if (!res.ok) throw new Error(`GET /api/tags -> ${res.status}`);
@@ -84,7 +84,7 @@ export async function collectStatus(
   }
 
   const distPath = deps.distPath ?? DEFAULT_DIST_PATH;
-  checks.push(await run('mcp build', async () => {
+  checks.push(await run('mcp build', () => {
     if (!existsSync(distPath)) throw new Error(`${distPath} missing; run npm run build`);
     return distPath;
   }));
