@@ -31,6 +31,15 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   2.1.330.
 
 ### Fixed
+- `block-destructive.sh`: a newline now counts as a command separator in the read-only
+  exemption, so an `echo` or `grep` followed on the next line by a recursive delete of the
+  root or a hard reset is denied; the whitespace collapse had turned the newline into a
+  space before the check.
+- `block-destructive.sh`: tokens are normalised once into arrays instead of through a
+  subshell per token per matcher, and a keyword fast path skips the loops for most
+  commands. A 49 KB command took 5.7 s, over half the 10 s hook timeout after which a hook
+  no longer blocks; it now takes about 20 ms. `hooks/tests/run.sh` fails any fixture over a
+  3 s budget (`HOOK_BUDGET_MS`), with a 19 KB fixture to keep it honest.
 - `block-destructive.sh` applies the destructive-SQL guard (DROP/TRUNCATE) only when the command
   invokes a SQL client (`psql`, `mysql`, `sqlite3`, ...), so a commit message or a test filter
   that merely mentions such a statement is no longer denied. Piped SQL and

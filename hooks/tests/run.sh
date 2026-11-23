@@ -5,6 +5,15 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# Hooks run under a 10 s timeout (hooks/hooks.json) and a timed-out hook does not
+# block, so a slow guard is a disabled guard. Every fixture must finish well inside it.
+BUDGET_MS="${HOOK_BUDGET_MS:-3000}"
+now_ms() { # 0 when the clock has no sub-second resolution (then the budget is not enforced)
+  local n
+  n="$(date +%s%N 2>/dev/null || true)"
+  if [[ "$n" =~ ^[0-9]+$ ]]; then echo $((n / 1000000)); else echo 0; fi
+}
+
 pass=0
 fail=0
 for fixture in cases/*/*.json; do
@@ -15,7 +24,9 @@ for fixture in cases/*/*.json; do
 
   err_file="$(mktemp)"
   rc=0
+  start_ms="$(now_ms)"
   output="$(bash "$script" < "$fixture" 2>"$err_file")" || rc=$?
+  elapsed_ms=$(( $(now_ms) - start_ms ))
   stderr="$(cat "$err_file")"
   rm -f "$err_file"
 
@@ -26,6 +37,9 @@ for fixture in cases/*/*.json; do
     got="allow"
   else
     got="$(printf '%s' "$output" | jq -r '.hookSpecificOutput.permissionDecision // "allow"')"
+  fi
+  if [[ "$got" == "$expected" && "$start_ms" -gt 0 && "$elapsed_ms" -gt "$BUDGET_MS" ]]; then
+    got="${expected} but slow (${elapsed_ms} ms > ${BUDGET_MS} ms budget)"
   fi
 
   if [[ "$got" == "$expected" ]]; then
