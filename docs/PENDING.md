@@ -1,8 +1,11 @@
 # Pending items
 
-Status snapshot: v0.2.0 (2026-11-24). Between v0.1.0 and v0.2.0 the four modules (`rag/`, `hooks/`,
-`agents/`+`skills/`+`contracts/`, `evals/`) went through a review each; everything those reviews
-fixed is in `CHANGELOG.md` under 0.2.0 and is not repeated here. This file lists only what is
+Status snapshot: `main` at `f4aacde`, two commits after v0.2.0 (2026-11-24). Between v0.1.0 and
+v0.2.0 the five modules (`rag/`, `hooks/`, `agents/`+`skills/`+`contracts/`, `evals/`, `docs/`) went
+through a review each; everything those reviews fixed is in `CHANGELOG.md` under 0.2.0 and is not
+repeated here. GitHub Releases exist for v0.1.0 and v0.2.0 (v0.2.0 marked latest), each carrying its
+CHANGELOG section. The plugin is loaded in development only, through `--plugin-dir`; the marketplace
+install made for the verification below was removed again by choice. This file lists only what is
 still open, grouped by who can act on it.
 
 ## 1. Actions only the repository owner can take
@@ -20,6 +23,11 @@ still open, grouped by who can act on it.
   2026-11-23: no RAG for research/architect inside this repo, no n8n for automation anywhere).
 - [ ] Move the n8n API key into the shell environment (`export N8N_API_KEY=...`); `.mcp.json` reads it
   from there.
+- [ ] Decide when to install the plugin for real use (`claude plugin marketplace add <repo>` then
+  `claude plugin install ai-engineering-system@ai-engineering-local`). While it is installed, dev
+  sessions opened in this repo with `--plugin-dir` load both copies. `claude plugin uninstall` leaves a
+  full copy (with `rag/node_modules`, ~130 MB) under `~/.claude/plugins/cache/<marketplace>/` that has
+  to be deleted by hand.
 - [ ] Pull the embedding model on the local Ollama (`docker compose up ollama-pull` in `rag/`);
   `rag_status` reports `have: none`, so local ingestion is impossible until then.
 - [ ] Re-index the plugin standards: `cd rag && npm run ingest:standards`. `ADR-007` and
@@ -30,7 +38,8 @@ still open, grouped by who can act on it.
 
 - [x] First marketplace install (2026-11-24, v0.2.0, Claude Code 2.1.331): plugin MCP tools are exposed
   as `mcp__plugin_ai-engineering-system_<server>__<tool>` exactly as with `--plugin-dir`; the research
-  subagent received the four RAG tools and called `rag_status`; the session banner fired.
+  subagent received the four RAG tools and called `rag_status`; the session banner fired. The install
+  reads the plugin straight from the repo path, so `rag/dist` was present without a separate build.
 - [ ] Confirm Claude Code starts the plugin MCP server with the project directory as cwd, so
   `readProjectName` resolves the default project; per-project scoping is not yet proven end to end.
 - [ ] On every Claude Code upgrade, re-verify that PreToolUse hook input carries the top-level
