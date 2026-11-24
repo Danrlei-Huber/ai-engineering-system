@@ -23,7 +23,7 @@ entry `{name, agent, started_at, finished_at, outcome}` as each state finishes.
 | RESEARCH     | ai-engineering-system:research      | feature, cwd                                                  | research-result     | always → ARCHITECTURE                                                |
 | ARCHITECTURE | ai-engineering-system:architect     | feature, research-result (+ the user's gate notes on a redo)  | architecture-plan   | always → HUMAN GATE                                                  |
 | HUMAN GATE   | none (you, with the user)           | architecture-plan                                             | decision            | approve → BACKEND; changes → ARCHITECTURE with the user's notes; abort → DONE |
-| BACKEND      | ai-engineering-system:backend       | architecture-plan (+ review-result when reworking)            | implementation-result | always → TESTER                                                    |
+| BACKEND      | ai-engineering-system:backend       | architecture-plan (+ review-result when reworking)            | implementation-result | status done → TESTER; status blocked → DONE with status "needs-human" |
 | TESTER       | ai-engineering-system:tester        | architecture-plan, implementation-result                      | test-result         | always → REVIEWER                                                    |
 | REVIEWER     | ai-engineering-system:reviewer      | feature, architecture-plan, test-result, diff scope           | review-result       | always → DECIDE                                                      |
 | DECIDE       | none                                | review-result                                                 | —                   | APPROVE → DONE; CHANGES and rework_count < 2 → BACKEND (rework_count += 1); CHANGES and rework_count == 2 → DONE with status "needs-human" |
@@ -31,8 +31,12 @@ entry `{name, agent, started_at, finished_at, outcome}` as each state finishes.
 
 ## Rules per state
 
-**RESEARCH.** Dispatch with the feature text and "end with the research-result contract". If the
-block is missing, redispatch once asking only for the contract.
+**Every dispatch.** Take the last ```yaml block of the reply and check it has the required keys
+listed in `contracts/README.md` for that contract. If the block is missing, malformed or lacks a
+required key, redispatch once asking only for the contract; if that fails too, stop with
+`review_status: "needs-human"` and show the reply.
+
+**RESEARCH.** Dispatch with the feature text and "end with the research-result contract".
 
 **ARCHITECTURE.** Dispatch with the feature text and the research-result block. On a redo after
 the gate, also pass the user's notes verbatim and the previous plan's `summary`, so the architect
@@ -47,7 +51,9 @@ state that the workflow is awaiting approval, write the run record with `review_
 "awaiting-approval"`, and end.
 
 **BACKEND.** Dispatch with the approved plan (and, on rework, the review-result). Never pass the
-research-result; the plan already contains what matters.
+research-result; the plan already contains what matters. On `status: blocked`, skip TESTER and
+REVIEWER: go to DONE with `review_status: "needs-human"` and show the user the
+`deviations_from_plan`, since the plan itself needs a decision.
 
 **TESTER.** Dispatch with the plan and the implementation-result. A non-empty
 `production_changes_needed` does not short-circuit anything: REVIEWER still runs, receives it inside

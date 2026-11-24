@@ -10,6 +10,6 @@ argument-hint: [question]
 Question: $ARGUMENTS
 
 1. Dispatch the `ai-engineering-system:research` subagent with the Agent tool. Prompt it with the question verbatim, the current working directory, and this instruction: "Follow your procedure and end with the research-result contract."
-2. Take the ```yaml block from its reply. If the block is missing or malformed, dispatch once more asking only for the contract.
+2. Take the ```yaml block from its reply and check it has the required keys for research-result listed in `${CLAUDE_PLUGIN_ROOT}/contracts/README.md`. If the block is missing, malformed or incomplete, dispatch once more asking only for the contract.
 3. Present to the user: the `answer`, then a "Sources" list built from `sources` (location and relevance), then `confidence`, then `open_questions` if any. If `rag_available` is false, say so in one line first.
 4. Print the raw contract block at the end so it can be pasted into other workflows.

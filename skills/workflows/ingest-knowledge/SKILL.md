@@ -16,7 +16,7 @@ Candidate docs:
 
 Rules: the skill resolves paths and calls the CLI; it never re-implements ingestion.
 
-1. Resolve `PROJECT` from `project.yaml`. If missing, stop and tell the user to run `/setup-project` (or pass a project explicitly is not supported here on purpose).
+1. Resolve `PROJECT` from `project.yaml`. If the file is missing, stop and tell the user to run `/setup-project`. Passing a project name as an argument is not supported on purpose: every ingestion must belong to a scaffolded project, so the knowledge base never gains a scope by typo.
 2. Check readiness: `node ${CLAUDE_PLUGIN_ROOT}/rag/dist/cli/doctor.js`. If `rag/dist/cli/doctor.js` does not exist, tell the user to run `npm ci && npm run build` in `<plugin>/rag` and stop. If it exits non-zero, show its output and stop; the fix is always in that output (compose up, migrate, build, pull model). The plugin path must not contain spaces.
 3. Decide targets:
    - If a path was given: one run with that path and `--collection` from the arguments (default `docs`), plus `--prune` if given.

@@ -5,6 +5,11 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 ## [Unreleased]
 
 ### Added
+- Contracts: `implementation-result` has a `status: done | blocked` field; on `blocked` the
+  `/implement-feature` orchestrator skips the tester and the reviewer and hands the plan and the
+  deviations to the user. `review-result.tests` reports `skipped` like `test-result`.
+- Contracts: `contracts/README.md` lists the required top-level keys of each contract; the
+  orchestrators check them before accepting a block (one redispatch, then stop).
 - Hooks: `block-destructive.sh` also denies deleting main/master on the remote
   (`git push --delete`, `-d`, the `:main` refspec) or locally (`git branch -D|-d|--delete
   main`), `git clean -f`, `docker compose down -v`/`--volumes` (also `docker-compose`),
@@ -22,6 +27,10 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   from Claude Code 2.1.330.
 
 ### Changed
+- Contracts: `contracts/README.md` records the dispatch-name verification on Claude Code 2.1.331
+  and the shadowing gotcha: a same-named MCP server at local or user scope hides the plugin's.
+- Workflows: `/ingest-knowledge` step 1 reworded (the sentence about passing a project name was
+  garbled).
 - Agents: `automation` no longer holds `n8n_delete_workflow` or `n8n_manage_credentials`
   (withheld through `disallowedTools` on top of the server-wide grant); it reports when a task
   needs either and leaves it to the user.
