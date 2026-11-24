@@ -5,6 +5,12 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      ablation:
+        description: "Eval arms: none (plugin only) or with-without (adds the no-plugin baseline and reports the delta)"
+        type: choice
+        options: [none, with-without]
+        default: none
   schedule:
     - cron: "0 6 * * 1" # weekly evals, Monday 06:00 UTC
 
@@ -71,10 +77,21 @@ jobs:
       - uses: actions/setup-node@v7
         with: { node-version: 22 }
       - run: sudo apt-get update && sudo apt-get install -y jq bubblewrap socat
+      - name: Require the API key
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::ANTHROPIC_API_KEY is not set as a repository secret, so the eval suite cannot authenticate (every run would fail with 'Not logged in'). Add it under Settings > Secrets and variables > Actions, then re-run this job."
+            exit 1
+          fi
       - run: npm install -g @anthropic-ai/claude-code@2.1.330
+      # The weekly run adds the no-plugin baseline arm so the report carries the delta the plugin
+      # makes; a manual dispatch defaults to the plugin arm only. Model and judge are pinned so a
+      # model rollout is not read as a plugin regression; the cost ceiling bounds a runaway run.
       - run: >
-          claude plugin eval . --scaffold --trust-plugin --ablation none
-          --threshold 0.8 --allow-tools Bash Write Edit --model claude-sonnet-5
+          claude plugin eval . --scaffold --trust-plugin
+          --ablation ${{ github.event.inputs.ablation || 'with-without' }}
+          --threshold 0.8 --allow-tools Bash Write Edit
+          --model claude-sonnet-5 --judge-model claude-haiku-5-5 --max-cost-usd 20
           --json results.json --no-publish
       - uses: actions/upload-artifact@v7
         if: always()

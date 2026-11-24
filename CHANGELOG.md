@@ -29,6 +29,13 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   from Claude Code 2.1.330.
 
 ### Changed
+- Evals: the CI `evals` job fails fast with an explicit error when the `ANTHROPIC_API_KEY`
+  secret is missing (it had been failing every Monday since 2026-09-28 with a one-second
+  "Not logged in" run), pins `--judge-model claude-haiku-5-5` next to `--model`, caps the run at
+  `--max-cost-usd 20`, and runs the no-plugin baseline arm (`--ablation with-without`) on the
+  weekly schedule; a manual dispatch chooses the arm. Every case runs 3 times (was 2) and the
+  dispatch graders are `arm: with-only`. The README and `.claude/CLAUDE.md` commands add
+  `--no-publish` and a cost cap, and the README records which cases have passing evidence.
 - Agents: the read-only agents (`architect`, `research`, `reviewer`, `automation`) list
   `MultiEdit` and `NotebookEdit` in `disallowedTools` consistently.
 - Contracts: `contracts/README.md` records the dispatch-name verification on Claude Code 2.1.331
