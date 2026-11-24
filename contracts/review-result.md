@@ -16,6 +16,7 @@ summary: >-
   ...
 ```
 
-Rules: `status: CHANGES` whenever there is a critical or major finding, whenever tests fail, or
-whenever a planned test is missing. Judge the diff against the architecture-plan and the
+Rules: `status: CHANGES` whenever there is a critical or major finding, whenever tests fail,
+whenever a planned test is missing, or whenever the test-result lists `production_changes_needed`
+(one major finding per entry). Judge the diff against the architecture-plan and the
 test-result, not against the implementer's explanation.

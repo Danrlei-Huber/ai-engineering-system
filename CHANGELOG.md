@@ -25,6 +25,15 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 - Agents: `automation` no longer holds `n8n_delete_workflow` or `n8n_manage_credentials`
   (withheld through `disallowedTools` on top of the server-wide grant); it reports when a task
   needs either and leaves it to the user.
+- Agents/rules: the tester's allowed test paths are listed once, in the testing rules (rule 3),
+  matching what `restrict-tester-paths.sh` accepts after this release's additions; `tester.md`
+  refers to that list instead of carrying a stale copy. The bugfix rule now says how the
+  reproduction test is split across architect, backend, tester and reviewer inside
+  `/implement-feature`, where the backend may not write tests.
+- Workflows: `/implement-feature` states that a non-empty `production_changes_needed` goes to the
+  reviewer inside the test-result and yields CHANGES with one major finding per entry (also in
+  `reviewer.md` and `review-result.md`), and that a redo after the human gate passes the user's
+  notes and the previous summary to the architect.
 - Hooks: `block-secrets.sh` and `restrict-tester-paths.sh` also cover `NotebookEdit`
   (`notebook_path`, `new_source`), which was outside every matcher.
 - Hooks: the tester may write RSpec (`spec/`, `*_spec.rb`), pytest suffix (`*_test.py`,

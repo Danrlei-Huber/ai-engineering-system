@@ -21,7 +21,7 @@ entry `{name, agent, started_at, finished_at, outcome}` as each state finishes.
 | State        | Agent (subagent type)               | Input                                                        | Output              | Exit                                                                 |
 |--------------|-------------------------------------|--------------------------------------------------------------|---------------------|----------------------------------------------------------------------|
 | RESEARCH     | ai-engineering-system:research      | feature, cwd                                                  | research-result     | always → ARCHITECTURE                                                |
-| ARCHITECTURE | ai-engineering-system:architect     | feature, research-result                                      | architecture-plan   | always → HUMAN GATE                                                  |
+| ARCHITECTURE | ai-engineering-system:architect     | feature, research-result (+ the user's gate notes on a redo)  | architecture-plan   | always → HUMAN GATE                                                  |
 | HUMAN GATE   | none (you, with the user)           | architecture-plan                                             | decision            | approve → BACKEND; changes → ARCHITECTURE with the user's notes; abort → DONE |
 | BACKEND      | ai-engineering-system:backend       | architecture-plan (+ review-result when reworking)            | implementation-result | always → TESTER                                                    |
 | TESTER       | ai-engineering-system:tester        | architecture-plan, implementation-result                      | test-result         | always → REVIEWER                                                    |
@@ -34,8 +34,10 @@ entry `{name, agent, started_at, finished_at, outcome}` as each state finishes.
 **RESEARCH.** Dispatch with the feature text and "end with the research-result contract". If the
 block is missing, redispatch once asking only for the contract.
 
-**ARCHITECTURE.** Dispatch with the feature text and the research-result block. If the returned
-plan has non-empty `open_questions`, they go to the user at the gate.
+**ARCHITECTURE.** Dispatch with the feature text and the research-result block. On a redo after
+the gate, also pass the user's notes verbatim and the previous plan's `summary`, so the architect
+revises rather than restarts. If the returned plan has non-empty `open_questions`, they go to the
+user at the gate.
 
 **HUMAN GATE.** This is the only place that waits on the user. Show the plan: `summary`, the
 `files` table, `tests`, `risks`, `adr` (and `adr_draft` if present), `open_questions`. Then ask
@@ -47,8 +49,10 @@ state that the workflow is awaiting approval, write the run record with `review_
 **BACKEND.** Dispatch with the approved plan (and, on rework, the review-result). Never pass the
 research-result; the plan already contains what matters.
 
-**TESTER.** Dispatch with the plan and the implementation-result. If `production_changes_needed`
-is non-empty, treat it as a review finding of severity major for the DECIDE step.
+**TESTER.** Dispatch with the plan and the implementation-result. A non-empty
+`production_changes_needed` does not short-circuit anything: REVIEWER still runs, receives it inside
+the test-result, and by its rules returns CHANGES with one major finding per entry, which DECIDE
+then handles like any other CHANGES.
 
 **REVIEWER.** Dispatch with: the feature text, the plan, the test-result, and the diff scope
 (`git diff` for uncommitted work). Do **not** pass the implementation-result or any explanation
