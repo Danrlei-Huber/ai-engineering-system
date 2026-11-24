@@ -99,6 +99,12 @@ banner_check "setup warning without deny rules" "$bare_project" "/setup-project"
 mkdir -p "$bare_project/.claude"
 echo '{"permissions":{"deny":["WebFetch"]}}' > "$bare_project/.claude/settings.json"
 banner_check "no setup warning with deny rules" "$bare_project" "[ai-engineering-system v" "permissions.deny"
+# project.yaml records the plugin version it was scaffolded with; a different version is worth a line.
+mkdir -p "$bare_project/.ai-engineering"
+printf 'project: demo\nstack:\n  - node\ntest_command: npm test\nai_engineering_system:\n  version: "0.0.1"\n' > "$bare_project/.ai-engineering/project.yaml"
+banner_check "version drift warning" "$bare_project" "project.yaml was scaffolded by ai-engineering-system v0.0.1" ""
+printf 'project: demo\nai_engineering_system:\n  version: "%s"\n' "$plugin_version" > "$bare_project/.ai-engineering/project.yaml"
+banner_check "no drift warning when versions match" "$bare_project" "[ai-engineering-system v" "scaffolded by"
 rm -rf "$bare_project"
 
 echo "hooks: ${pass} passed, ${fail} failed"

@@ -2,7 +2,7 @@
 name: research
 description: Gathers context for a question or task from the knowledge base (RAG), the codebase and the web. Read-only. Returns a research-result contract. Use before planning.
 tools: Read, Glob, Grep, WebSearch, WebFetch, mcp__plugin_ai-engineering-system_engineering-rag
-disallowedTools: Edit, Write, Bash, mcp__plugin_ai-engineering-system_n8n-mcp
+disallowedTools: Edit, Write, MultiEdit, NotebookEdit, Bash, mcp__plugin_ai-engineering-system_n8n-mcp
 model: inherit
 ---
 

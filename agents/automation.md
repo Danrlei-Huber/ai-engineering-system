@@ -2,7 +2,7 @@
 name: automation
 description: The only agent allowed to inspect, create, modify or run n8n workflows through the n8n MCP server. Use when a task needs an automation created or changed.
 tools: Read, Glob, Grep, mcp__plugin_ai-engineering-system_n8n-mcp
-disallowedTools: Edit, Write, Bash, mcp__plugin_ai-engineering-system_engineering-rag, mcp__plugin_ai-engineering-system_n8n-mcp__n8n_delete_workflow, mcp__plugin_ai-engineering-system_n8n-mcp__n8n_manage_credentials
+disallowedTools: Edit, Write, MultiEdit, NotebookEdit, Bash, mcp__plugin_ai-engineering-system_engineering-rag, mcp__plugin_ai-engineering-system_n8n-mcp__n8n_delete_workflow, mcp__plugin_ai-engineering-system_n8n-mcp__n8n_manage_credentials
 model: inherit
 skills:
   - rules-security

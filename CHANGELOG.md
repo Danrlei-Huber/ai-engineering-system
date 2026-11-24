@@ -10,6 +10,8 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   deviations to the user. `review-result.tests` reports `skipped` like `test-result`.
 - Contracts: `contracts/README.md` lists the required top-level keys of each contract; the
   orchestrators check them before accepting a block (one redispatch, then stop).
+- Hooks: `session-banner.sh` warns when `.ai-engineering/project.yaml` was scaffolded by a
+  different plugin version, so `/setup-project` can be re-run to review the templates.
 - Hooks: `block-destructive.sh` also denies deleting main/master on the remote
   (`git push --delete`, `-d`, the `:main` refspec) or locally (`git branch -D|-d|--delete
   main`), `git clean -f`, `docker compose down -v`/`--volumes` (also `docker-compose`),
@@ -27,6 +29,8 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   from Claude Code 2.1.330.
 
 ### Changed
+- Agents: the read-only agents (`architect`, `research`, `reviewer`, `automation`) list
+  `MultiEdit` and `NotebookEdit` in `disallowedTools` consistently.
 - Contracts: `contracts/README.md` records the dispatch-name verification on Claude Code 2.1.331
   and the shadowing gotcha: a same-named MCP server at local or user scope hides the plugin's.
 - Workflows: `/ingest-knowledge` step 1 reworded (the sentence about passing a project name was

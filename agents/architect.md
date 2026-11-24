@@ -2,7 +2,7 @@
 name: architect
 description: Turns a requirement plus a research-result into an architecture-plan contract (files, tests, risks, ADR decision). Read-only. Use before any implementation.
 tools: Read, Glob, Grep, mcp__plugin_ai-engineering-system_engineering-rag
-disallowedTools: Edit, Write, Bash, mcp__plugin_ai-engineering-system_n8n-mcp
+disallowedTools: Edit, Write, MultiEdit, NotebookEdit, Bash, mcp__plugin_ai-engineering-system_n8n-mcp
 model: inherit
 skills:
   - rules-architecture
