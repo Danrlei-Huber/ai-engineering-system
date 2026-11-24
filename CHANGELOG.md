@@ -10,6 +10,8 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   main`), `git clean -f`, `docker compose down -v`/`--volumes` (also `docker-compose`),
   `docker volume prune|rm`, `find -delete` starting from the root or home, and the
   root/parent spellings `//`, `../..` and a backslash-escaped `rm`.
+- Hooks: `block-secrets.sh` recognises Slack tokens, OpenAI-style keys (digits required, so
+  an all-letter placeholder passes), Stripe keys and Google API keys.
 - RAG: `npm run migrate:down` reverts the last applied migration with its `NNN_name.down.sql`
   (`rollback()` in `migrate.ts`); `migrations/001_init.down.sql` added. `listMigrationFiles`
   ignores `.down.sql` files.
@@ -18,6 +20,11 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   from Claude Code 2.1.330.
 
 ### Changed
+- Hooks: `block-secrets.sh` and `restrict-tester-paths.sh` also cover `NotebookEdit`
+  (`notebook_path`, `new_source`), which was outside every matcher.
+- Hooks: the tester may write RSpec (`spec/`, `*_spec.rb`), pytest suffix (`*_test.py`,
+  `conftest.py`), `e2e/`, `cypress/` and `*.cy.*` files; `*.spec.yaml|yml|json|md` data
+  files no longer pass as tests.
 - Hooks: the four guard scripts fail closed when `jq` is missing (exit 2, the blocking
   PreToolUse code, with an install hint on stderr) instead of exiting 127, which Claude Code
   treats as a non-blocking error and lets the call through. `session-banner.sh` warns about it

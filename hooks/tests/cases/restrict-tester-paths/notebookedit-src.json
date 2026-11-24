@@ -1,0 +1,13 @@
+{
+  "session_id": "t",
+  "cwd": "/work/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "NotebookEdit",
+  "tool_input": {
+    "notebook_path": "/work/project/notebooks/analysis.ipynb",
+    "cell_id": "c1",
+    "new_source": "print(1)",
+    "edit_mode": "replace"
+  },
+  "agent_type": "ai-engineering-system:tester"
+}

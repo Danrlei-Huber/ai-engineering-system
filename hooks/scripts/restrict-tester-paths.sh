@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # PreToolUse guard, wired plugin-wide in hooks/hooks.json: the tester may only write test files.
-# Allowed: **/tests/**, **/test/**, **/__tests__/**, *.test.*, *.spec.*, test_*.py, *_test.go,
-#          and .ai-engineering/runs/** (run records). Any other dot-directory is refused.
+# Allowed: **/tests/**, **/test/**, **/__tests__/**, **/spec/**, **/e2e/**, **/cypress/**,
+#          *.test.*, *.spec.* (except .spec.yaml/.yml/.json/.md data files), test_*.py, *_test.py,
+#          conftest.py, *_test.go, *_spec.rb, *.cy.*, and .ai-engineering/runs/** (run records).
+#          Any other dot-directory is refused.
 # Agent-frontmatter hooks are ignored for plugin agents (Claude Code 2.1.x), so this hook runs
 # for every Edit/Write/MultiEdit and gates itself on the calling agent's identity: the top-level
 # `agent_type` field of the PreToolUse hook input. It exits 0 (allow) for the main session
@@ -18,12 +20,12 @@ fi
 
 input="$(cat)"
 tool="$(jq -r '.tool_name // empty' <<<"$input")"
-case "$tool" in Edit|Write|MultiEdit) ;; *) exit 0 ;; esac
+case "$tool" in Edit|Write|MultiEdit|NotebookEdit) ;; *) exit 0 ;; esac
 
 agent_type="$(jq -r '.agent_type // empty' <<<"$input")"
 case "$agent_type" in tester|*:tester) ;; *) exit 0 ;; esac
 
-path="$(jq -r '(.tool_input | objects | .file_path) // empty' <<<"$input")"
+path="$(jq -r '(.tool_input | objects | (.file_path // .notebook_path)) // empty' <<<"$input")"
 [[ -n "$path" ]] || exit 0
 cwd="$(jq -r '.cwd // empty' <<<"$input")"
 
@@ -58,11 +60,14 @@ fi
 
 allowed=0
 case "/$rel" in
-  /tests/*|/test/*|*/tests/*|*/test/*|*/__tests__/*|/.ai-engineering/runs/*) allowed=1 ;;
+  /tests/*|/test/*|*/tests/*|*/test/*|*/__tests__/*|*/spec/*|*/e2e/*|*/cypress/*|/.ai-engineering/runs/*) allowed=1 ;;
 esac
-case "$base" in
-  *.test.*|*.spec.*|test_*.py|*_test.go) allowed=1 ;;
-esac
+if [[ "$allowed" -eq 0 ]]; then
+  case "$base" in
+    *.spec.yaml|*.spec.yml|*.spec.json|*.spec.md) ;; # API specs and data files, not tests
+    *.test.*|*.spec.*|test_*.py|*_test.py|conftest.py|*_test.go|*_spec.rb|*.cy.*) allowed=1 ;;
+  esac
+fi
 
 if [[ "$allowed" -eq 0 ]]; then
   jq -n --arg p "$rel" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:("The tester agent may only write test files (tests/**, *.test.*, *.spec.*). Refused: " + $p + ". Report the needed production change in the test-result contract instead.")}}'

@@ -1,0 +1,11 @@
+{
+  "note": "the credential-looking content is JSON-escaped (\\uXXXX) so GitHub push protection does not read this fixture as a leaked secret; jq decodes it before the hook sees the content",
+  "session_id": "t",
+  "cwd": "/work/project",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Write",
+  "tool_input": {
+    "file_path": "/work/project/a.ts",
+    "content": "\u0063\u006f\u006e\u0073\u0074\u0020\u006b\u0020\u003d\u0020\u0022\u0073\u006b\u002d\u0070\u0072\u006f\u006a\u002d\u0061\u0042\u0033\u0064\u0045\u0035\u0066\u0047\u0037\u0068\u0049\u0039\u006a\u004b\u0031\u006c\u004d\u0033\u006e\u004f\u0035\u0070\u0051\u0037\u0072\u0053\u0039\u0074\u0055\u0031\u0076\u0057\u0033\u0078\u0059\u0035\u007a\u0041\u0037\u0062\u0043\u0039\u0064\u0045\u0031\u0066\u0047\u0033\u0068\u0049\u0035\u0022\u003b"
+  }
+}
