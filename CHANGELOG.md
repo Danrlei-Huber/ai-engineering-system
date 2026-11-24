@@ -22,6 +22,9 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   from Claude Code 2.1.330.
 
 ### Changed
+- Agents: `automation` no longer holds `n8n_delete_workflow` or `n8n_manage_credentials`
+  (withheld through `disallowedTools` on top of the server-wide grant); it reports when a task
+  needs either and leaves it to the user.
 - Hooks: `block-secrets.sh` and `restrict-tester-paths.sh` also cover `NotebookEdit`
   (`notebook_path`, `new_source`), which was outside every matcher.
 - Hooks: the tester may write RSpec (`spec/`, `*_spec.rb`), pytest suffix (`*_test.py`,
