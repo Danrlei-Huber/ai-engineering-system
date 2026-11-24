@@ -4,7 +4,9 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- Docs: the MCP tool prefix is recorded as verified with a marketplace install (v0.2.0, Claude
+  Code 2.1.331), not only with `--plugin-dir`.
 
 ## [0.2.0] - 2026-11-24
 

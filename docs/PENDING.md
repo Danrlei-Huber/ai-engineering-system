@@ -28,9 +28,9 @@ still open, grouped by who can act on it.
 
 ## 2. Verifications to perform once
 
-- [ ] First marketplace install: confirm plugin MCP tools are still exposed as
-  `mcp__plugin_ai-engineering-system_<server>__<tool>` (verified with `--plugin-dir` on 2.1.280 and
-  2.1.331 only).
+- [x] First marketplace install (2026-11-24, v0.2.0, Claude Code 2.1.331): plugin MCP tools are exposed
+  as `mcp__plugin_ai-engineering-system_<server>__<tool>` exactly as with `--plugin-dir`; the research
+  subagent received the four RAG tools and called `rag_status`; the session banner fired.
 - [ ] Confirm Claude Code starts the plugin MCP server with the project directory as cwd, so
   `readProjectName` resolves the default project; per-project scoping is not yet proven end to end.
 - [ ] On every Claude Code upgrade, re-verify that PreToolUse hook input carries the top-level
