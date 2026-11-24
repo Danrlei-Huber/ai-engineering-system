@@ -41,6 +41,14 @@ for fixture in cases/*/*.json; do
   if [[ "$got" == "$expected" && "$start_ms" -gt 0 && "$elapsed_ms" -gt "$BUDGET_MS" ]]; then
     got="${expected} but slow (${elapsed_ms} ms > ${BUDGET_MS} ms budget)"
   fi
+  # An optional <case>.reason holds text the deny reason must contain, so a
+  # refusal is not just a refusal but the right one.
+  reason_file="${fixture%.json}.reason"
+  if [[ "$got" == "$expected" && -f "$reason_file" ]]; then
+    want_reason="$(tr -d '\n' < "$reason_file")"
+    got_reason="$(printf '%s' "$output" | jq -r '.hookSpecificOutput.permissionDecisionReason // ""')"
+    [[ "$got_reason" == *"$want_reason"* ]] || got="${expected} but the reason lacks \"${want_reason}\": ${got_reason}"
+  fi
 
   if [[ "$got" == "$expected" ]]; then
     pass=$((pass + 1))
@@ -65,6 +73,33 @@ for script in ../scripts/block-destructive.sh ../scripts/block-secrets.sh ../scr
     echo "FAIL ${script} without jq: expected rc=2 (fail closed), got rc=${rc}"
   fi
 done
+
+# session-banner.sh prints context, not a decision: check the version line, the
+# workflow list (derived from skills/workflows/) and the setup warning, which
+# must appear for a project without permissions.deny rules and only then.
+plugin_root="$(cd ../.. && pwd)"
+banner_check() { # banner_check <label> <cwd> <must-contain> <must-not-contain>
+  local out
+  out="$(printf '{"hook_event_name":"SessionStart","cwd":"%s"}' "$2" | CLAUDE_PLUGIN_ROOT="$plugin_root" bash ../scripts/session-banner.sh 2>&1)" || { fail=$((fail + 1)); echo "FAIL banner ${1}: exit code $?"; return; }
+  if [[ "$out" == *"$3"* && ( -z "$4" || "$out" != *"$4"* ) ]]; then
+    pass=$((pass + 1))
+  else
+    fail=$((fail + 1))
+    echo "FAIL banner ${1}: expected output to contain \"${3}\"${4:+ and not \"$4\"}"
+    echo "     output: ${out}"
+  fi
+}
+plugin_version="$(jq -r .version "$plugin_root/.claude-plugin/plugin.json")"
+bare_project="$(mktemp -d)"
+banner_check "version line" "$bare_project" "[ai-engineering-system v${plugin_version}]" ""
+for w in "$plugin_root"/skills/workflows/*/; do
+  banner_check "workflow /$(basename "$w")" "$bare_project" "/$(basename "$w")" ""
+done
+banner_check "setup warning without deny rules" "$bare_project" "/setup-project" ""
+mkdir -p "$bare_project/.claude"
+echo '{"permissions":{"deny":["WebFetch"]}}' > "$bare_project/.claude/settings.json"
+banner_check "no setup warning with deny rules" "$bare_project" "[ai-engineering-system v" "permissions.deny"
+rm -rf "$bare_project"
 
 echo "hooks: ${pass} passed, ${fail} failed"
 [[ "$fail" -eq 0 ]]

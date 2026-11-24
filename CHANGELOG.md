@@ -12,6 +12,8 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   root/parent spellings `//`, `../..` and a backslash-escaped `rm`.
 - Hooks: `block-secrets.sh` recognises Slack tokens, OpenAI-style keys (digits required, so
   an all-letter placeholder passes), Stripe keys and Google API keys.
+- Hooks: `hooks/tests/run.sh` checks an optional `<case>.reason` substring against the deny
+  reason, and exercises `session-banner.sh` (version line, workflow list, setup warning).
 - RAG: `npm run migrate:down` reverts the last applied migration with its `NNN_name.down.sql`
   (`rollback()` in `migrate.ts`); `migrations/001_init.down.sql` added. `listMigrationFiles`
   ignores `.down.sql` files.
@@ -25,6 +27,8 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 - Hooks: the tester may write RSpec (`spec/`, `*_spec.rb`), pytest suffix (`*_test.py`,
   `conftest.py`), `e2e/`, `cypress/` and `*.cy.*` files; `*.spec.yaml|yml|json|md` data
   files no longer pass as tests.
+- Hooks: `session-banner.sh` lists the workflows from `skills/workflows/` instead of a
+  hard-coded line.
 - Hooks: the four guard scripts fail closed when `jq` is missing (exit 2, the blocking
   PreToolUse code, with an install hint on stderr) instead of exiting 127, which Claude Code
   treats as a non-blocking error and lets the call through. `session-banner.sh` warns about it

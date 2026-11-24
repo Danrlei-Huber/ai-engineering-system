@@ -14,7 +14,13 @@ cwd="$(jq -r '.cwd // empty' <<<"$input" 2>/dev/null || true)"
 [[ -n "$cwd" ]] || cwd="$PWD"
 
 version="$(jq -r '.version // "unknown"' "$root/.claude-plugin/plugin.json" 2>/dev/null || echo unknown)"
-echo "[ai-engineering-system v${version}] active. Workflows: /implement-feature, /review, /research, /setup-project, /ingest-knowledge."
+# The workflow list is read from skills/workflows/ so a new orchestrator shows up by itself.
+workflows=""
+for dir in "$root"/skills/workflows/*/; do
+  [[ -d "$dir" ]] || continue
+  workflows="${workflows:+$workflows, }/$(basename "$dir")"
+done
+echo "[ai-engineering-system v${version}] active. Workflows: ${workflows:-none found}."
 
 if [[ ! -f "$root/rag/dist/server.js" ]]; then
   echo "[ai-engineering-system] RAG server is not built; research and architect agents will run without the knowledge base. Build it with: cd \"$root/rag\" && npm ci && npm run build"
