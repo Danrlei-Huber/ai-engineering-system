@@ -71,7 +71,7 @@ Claude Code refuses to write `.claude/settings.json` in non-interactive (`-p`) m
 
 ## What is enforced, not suggested
 
-- `rm -rf` on roots, force-push to main, `git reset --hard`, `DROP/TRUNCATE` sent through a SQL client, `kubectl delete`, `terraform destroy`, `docker system prune` are denied by hooks.
+- `rm -rf` on roots (any spelling, including `//` and `../..`), force-push to main and deleting main/master on the remote (`git push --delete`, `:main`) or locally (`git branch -D main`), `git reset --hard`, `git clean -f`, `DROP/TRUNCATE` sent through a SQL client, `kubectl delete`, `terraform destroy`, `docker system prune`, `docker volume prune|rm`, `docker compose down -v` and `find -delete` from the root or home are denied by hooks.
 - Writing credential-like content or touching `.env` (and environment variants `.env.local`, `.env.*.local`, `.env.development`, `.env.test`, `.env.staging`, `.env.production`) is denied; the templates `.env.example`, `.env.sample`, `.env.template` and `.env.dist`, and direnv's `.envrc`, remain readable and writable.
 - The guard hooks need `jq` and fail closed without it: every Bash, Edit, Write and Read call is refused with an install hint, and the session banner warns up front.
 - The tester agent can write only test paths through the Edit/Write/MultiEdit tools, and is

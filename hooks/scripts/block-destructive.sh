@@ -32,8 +32,9 @@ deny() {
   exit 0
 }
 
-# Collapse whitespace so patterns stay simple.
-norm="$(tr -s '[:space:]' ' ' <<<"$cmd")"
+# Collapse whitespace so patterns stay simple. A newline ends a command like
+# `;` does, so it is turned into one first instead of vanishing into a space.
+norm="$(tr -s '[:space:]' ' ' <<<"${cmd//$'\n'/ ; }")"
 norm="${norm# }"
 norm="${norm% }"
 
@@ -55,7 +56,7 @@ esac
 
 # Fast path: no matcher below can fire unless one of its command words appears
 # somewhere in the command, so most commands never reach the token loops.
-if ! grep -Eq '(^|[^[:alnum:]_.-])(rm|git|kubectl|terraform|docker|psql|pgcli|mysql|mariadb|mycli|sqlite3|sqlcmd|cockroach|clickhouse-client|duckdb)([^[:alnum:]_.-]|$)' <<<"$norm"; then
+if ! grep -Eq '(^|[^[:alnum:]_.-])(rm|git|kubectl|terraform|docker-compose|docker|find|psql|pgcli|mysql|mariadb|mycli|sqlite3|sqlcmd|cockroach|clickhouse-client|duckdb)([^[:alnum:]_.-]|$)' <<<"$norm"; then
   exit 0
 fi
 
@@ -74,9 +75,18 @@ read -r -a tokens <<<"$norm"
 ntok="${#tokens[@]}"
 cw=()
 aw=()
+# `sep[i]` is 1 when token i ends a simple command (`;`, `&&`, `||`, `|`, `&`,
+# alone or glued to the token: `main;`). Argument scans stop there, so the
+# flags of a later command on the same line are not read as this one's.
+sep=()
 for ((i = 0; i < ntok; i++)); do
+  case "${tokens[i]}" in
+    ';' | '&&' | '||' | '|' | '&' | *';' | *'&&' | *'||' | *'|' | *'&') sep[i]=1 ;;
+    *) sep[i]=0 ;;
+  esac
   s="${tokens[i]}"
   s="${s##*[\(\`]}"
+  s="${s#\\}" # `\rm` skips a shell alias, not this guard
   while [[ -n "$s" && "$s" == [\"\'\$\;\&\|]* ]]; do s="${s#?}"; done
   s="${s%[\"\']}"
   cw[i]="$s"
@@ -134,6 +144,7 @@ subcommand_after_flags() { # subcommand_after_flags <start-index> <wanted>...
 # through any quoting of the target.
 for ((i = 0; i < ntok; i++)); do
   [[ "${cw[i]}" == "rm" || "${cw[i]}" == */rm ]] || continue
+  [[ "${sep[i]}" -eq 0 ]] || continue
 
   recursive=0
   force=0
@@ -150,6 +161,7 @@ for ((i = 0; i < ntok; i++)); do
       -?*)
         [[ "$arg" == *[rR]* ]] && recursive=1
         [[ "$arg" == *[fF]* ]] && force=1
+        [[ "${sep[j]}" -eq 1 ]] && break
         continue
         ;;
     esac
@@ -166,6 +178,8 @@ for ((i = 0; i < ntok; i++)); do
     | '$PWD' | '${PWD}' | '$(pwd)' | '`pwd`' \
     | '.' | './' | './*' | '*' | '..' | '../') dangerous=1 ;;
   esac
+  # `//` is still the root; `../..` and `../../../` still climb out of the project.
+  if [[ "$target" =~ ^/+$ || "$target" =~ ^(\.\./)*\.\./?$ ]]; then dangerous=1; fi
 
   if [[ "$no_preserve" -eq 1 && "$dangerous" -eq 1 ]]; then
     deny "rm --no-preserve-root against ${target} is blocked. Delete a specific sub-path instead."
@@ -183,32 +197,50 @@ done
 # on the refspec; --force-with-lease excluded) whose destination ref is main
 # or master, including `HEAD:main`, `main:main`, `+main`, `:main` and
 # `origin/main` -- behind any git global flags (`git -C /repo push -f main`).
+# Also catches deleting that ref on the remote: `--delete`/`-d`, or the empty
+# source refspec `:main`.
 for ((i = 0; i + 1 < ntok; i++)); do
   [[ "${cw[i]}" == "git" || "${cw[i]}" == */git ]] || continue
-  subcommand_after_flags $((i + 1)) push reset
-  [[ "$sub_word" == "push" ]] || continue
+  subcommand_after_flags $((i + 1)) push reset clean branch
+  [[ "$sub_word" == "push" && "${sep[sub_index]}" -eq 0 ]] || continue
 
   forced=0
+  deleting=0
   hits_main=0
   for ((j = sub_index + 1; j < ntok; j++)); do
     arg="${aw[j]}"
     ref=""
     case "$arg" in
-      --force-with-lease*) continue ;;
-      --force) forced=1; continue ;;
-      --*) continue ;;
-      -?*) [[ "$arg" == *f* ]] && forced=1; continue ;;
+      --force-with-lease*) ;;
+      --force) forced=1 ;;
+      --delete) deleting=1 ;;
+      --*) ;;
+      -?*)
+        [[ "$arg" == *f* ]] && forced=1
+        [[ "$arg" == *d* ]] && deleting=1
+        ;;
       +*) forced=1; ref="${arg#+}" ;;
       *) ref="$arg" ;;
     esac
+    if [[ -z "$ref" ]]; then
+      [[ "${sep[j]}" -eq 1 ]] && break
+      continue
+    fi
     dst="${ref##*:}"
     case "$dst" in
-      main | master | */main | */master) hits_main=1 ;;
+      main | master | */main | */master)
+        hits_main=1
+        [[ "$ref" == :* ]] && deleting=1
+        ;;
     esac
+    [[ "${sep[j]}" -eq 1 ]] && break
   done
 
   if [[ "$forced" -eq 1 && "$hits_main" -eq 1 ]]; then
     deny "Force push to main/master is blocked."
+  fi
+  if [[ "$deleting" -eq 1 && "$hits_main" -eq 1 ]]; then
+    deny "Deleting main/master on the remote is blocked."
   fi
 done
 
@@ -218,13 +250,52 @@ done
 # subcommand, so `git log --grep "reset --hard"` is not mistaken for one.
 for ((i = 0; i + 1 < ntok; i++)); do
   [[ "${cw[i]}" == "git" || "${cw[i]}" == */git ]] || continue
-  subcommand_after_flags $((i + 1)) push reset
-  [[ "$sub_word" == "reset" ]] || continue
+  subcommand_after_flags $((i + 1)) push reset clean branch
+  [[ "$sub_word" == "reset" && "${sep[sub_index]}" -eq 0 ]] || continue
   for ((j = sub_index + 1; j < ntok; j++)); do
     if [[ "${aw[j]}" == "--hard" ]]; then
       deny "git reset --hard is blocked because it discards uncommitted work. Use git stash or ask the user."
     fi
+    [[ "${sep[j]}" -eq 1 ]] && break
   done
+done
+
+# --- git clean -f / git branch -D main --------------------------------------
+# Catches: `git clean` with force (git refuses to clean without it), because the
+# untracked files it removes may be work not yet committed; and deleting the
+# main/master branch with `-D`, `-d` or `--delete`.
+for ((i = 0; i + 1 < ntok; i++)); do
+  [[ "${cw[i]}" == "git" || "${cw[i]}" == */git ]] || continue
+  subcommand_after_flags $((i + 1)) push reset clean branch
+  [[ "${sep[sub_index]}" -eq 0 ]] || continue
+  case "$sub_word" in
+    clean)
+      for ((j = sub_index + 1; j < ntok; j++)); do
+        arg="${aw[j]}"
+        if [[ "$arg" == "--force" || ( "$arg" == -[!-]* && "$arg" == *f* ) ]]; then
+          deny "git clean -f removes untracked files, which may be uncommitted work. Ask the user to run it."
+        fi
+        [[ "${sep[j]}" -eq 1 ]] && break
+      done
+      ;;
+    branch)
+      deleting=0
+      names_main=0
+      for ((j = sub_index + 1; j < ntok; j++)); do
+        arg="${aw[j]}"
+        case "$arg" in
+          --delete) deleting=1 ;;
+          --*) ;;
+          -[!-]*) [[ "$arg" == *[dD]* ]] && deleting=1 ;;
+          main | master) names_main=1 ;;
+        esac
+        [[ "${sep[j]}" -eq 1 ]] && break
+      done
+      if [[ "$deleting" -eq 1 && "$names_main" -eq 1 ]]; then
+        deny "Deleting the main/master branch is blocked."
+      fi
+      ;;
+  esac
 done
 
 # --- destructive SQL -------------------------------------------------------
@@ -260,8 +331,72 @@ for ((i = 0; i < ntok; i++)); do
   esac
 done
 
-# --- docker system prune ---------------------------------------------------
-# Catches: the whole-daemon prune, which removes volumes and images in use elsewhere.
-if grep -Eq 'docker +system +prune' <<<"$norm"; then deny "docker system prune is blocked."; fi
+# --- docker ------------------------------------------------------------------
+# Catches what deletes data volumes (databases, models; the RAG's own among them):
+# `docker system prune`, `docker volume prune|rm`, and `docker compose down -v`
+# (or `--volumes`), also spelled `docker-compose down -v`.
+for ((i = 0; i < ntok; i++)); do
+  compose_sub=""
+  compose_index=-1
+  case "${cw[i]}" in
+    docker-compose | */docker-compose)
+      subcommand_after_flags $((i + 1)) down
+      compose_sub="$sub_word"
+      compose_index="$sub_index"
+      ;;
+    docker | */docker)
+      subcommand_after_flags $((i + 1)) compose volume system
+      case "$sub_word" in
+        compose)
+          subcommand_after_flags $((sub_index + 1)) down
+          compose_sub="$sub_word"
+          compose_index="$sub_index"
+          ;;
+        volume)
+          subcommand_after_flags $((sub_index + 1)) prune rm
+          case "$sub_word" in
+            prune | rm) deny "docker volume ${sub_word} is blocked: volumes hold databases and models. Ask the user to run it." ;;
+          esac
+          ;;
+        system)
+          subcommand_after_flags $((sub_index + 1)) prune
+          if [[ "$sub_word" == "prune" ]]; then deny "docker system prune is blocked."; fi
+          ;;
+      esac
+      ;;
+    *) continue ;;
+  esac
+  [[ "$compose_sub" == "down" && "${sep[compose_index]}" -eq 0 ]] || continue
+  for ((j = compose_index + 1; j < ntok; j++)); do
+    arg="${aw[j]}"
+    if [[ "$arg" == "--volumes" || ( "$arg" == -[!-]* && "$arg" == *v* ) ]]; then
+      deny "docker compose down with volumes is blocked: it deletes the data volumes. Run it without -v, or ask the user."
+    fi
+    [[ "${sep[j]}" -eq 1 ]] && break
+  done
+done
+
+# --- find -delete from the root or home ---------------------------------------
+# Catches: `find` whose starting point is the filesystem root or the home
+# directory and whose expression contains `-delete`. A specific sub-path is fine.
+for ((i = 0; i < ntok; i++)); do
+  [[ "${cw[i]}" == "find" || "${cw[i]}" == */find ]] || continue
+  [[ "${sep[i]}" -eq 0 ]] || continue
+  start=""
+  has_delete=0
+  for ((j = i + 1; j < ntok; j++)); do
+    arg="${aw[j]}"
+    [[ "$arg" == "-delete" ]] && has_delete=1
+    [[ -z "$start" && "$arg" != -* ]] && start="$arg"
+    [[ "${sep[j]}" -eq 1 ]] && break
+  done
+  [[ "$has_delete" -eq 1 && -n "$start" ]] || continue
+  # shellcheck disable=SC2016,SC2088  # literal, unexpanded argument spellings
+  case "$start" in
+    '/' | '/*' | '~' | '~/' | '$HOME' | '${HOME}' | '$HOME/' | '${HOME}/')
+      deny "find -delete from the filesystem root or the home directory is blocked. Start from a specific sub-path." ;;
+  esac
+  if [[ "$start" =~ ^/+$ ]]; then deny "find -delete from the filesystem root is blocked."; fi
+done
 
 exit 0

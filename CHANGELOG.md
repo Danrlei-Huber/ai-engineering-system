@@ -5,6 +5,11 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 ## [Unreleased]
 
 ### Added
+- Hooks: `block-destructive.sh` also denies deleting main/master on the remote
+  (`git push --delete`, `-d`, the `:main` refspec) or locally (`git branch -D|-d|--delete
+  main`), `git clean -f`, `docker compose down -v`/`--volumes` (also `docker-compose`),
+  `docker volume prune|rm`, `find -delete` starting from the root or home, and the
+  root/parent spellings `//`, `../..` and a backslash-escaped `rm`.
 - RAG: `npm run migrate:down` reverts the last applied migration with its `NNN_name.down.sql`
   (`rollback()` in `migrate.ts`); `migrations/001_init.down.sql` added. `listMigrationFiles`
   ignores `.down.sql` files.
@@ -37,6 +42,10 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   2.1.330.
 
 ### Fixed
+- `block-destructive.sh`: the argument scans of the git, docker and find matchers stop at
+  the next shell separator (`;`, `&&`, `||`, `|`, newline), so `git push origin feature; make
+  -f Makefile main` is no longer read as a forced push to main. A newline is turned into a
+  `;` token before tokenising.
 - `block-destructive.sh`: a newline now counts as a command separator in the read-only
   exemption, so an `echo` or `grep` followed on the next line by a recursive delete of the
   root or a hard reset is denied; the whitespace collapse had turned the newline into a
