@@ -10,3 +10,9 @@ Dangerous actions are denied by `PreToolUse` command hooks shipped in the plugin
 
 ## Consequences
 Enforcement order is: agent tool set → project permissions → hooks → execution. Plugin hooks run inside `claude plugin eval` only when `--trust-plugin` is passed; without it the security cases fail. The `agent_type` hook-input field was verified on Claude Code 2.1.280 and 2.1.330 and must be re-verified on CLI upgrades. Bypassing a hook is a deliberate human act, never an agent choice.
+
+Update 2026-11-23: the guards fail closed. Without `jq` each guard exits 2 (the blocking PreToolUse
+code) with an install hint, instead of exiting 127, which Claude Code treats as non-blocking; the
+session banner says so up front. A timed-out hook does not block either, so `hooks/tests/run.sh`
+enforces a 3 s budget per fixture and the guards normalise tokens once instead of spawning a subshell
+per token. The matchers include `NotebookEdit`. Read-only exemptions treat a newline as a separator.

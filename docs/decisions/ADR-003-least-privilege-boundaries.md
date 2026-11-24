@@ -10,3 +10,8 @@ Each agent gets the minimum tool set for its role. Agents that write code (backe
 
 ## Consequences
 The tester's Bash is guarded for write shapes by a second plugin hook (`restrict-tester-bash.sh`), so the edit-path restriction cannot simply be routed around the shell; the reviewer's Bash remains prompt-only for now. That hook is a deny-list of the common write shapes, not a sandbox -- `curl -o`, `wget -O`, interpreter one-liners and anything else it has no pattern for still get through, so the reviewer stays the second line of defence rather than a formality. Some tasks need two agents where one would do. In exchange, the reviewer's verdict is independent, external side effects come from exactly one place, and capability changes are visible in a six-line frontmatter diff. Enforcing the RAG and n8n boundaries in agent frontmatter requires the namespaced tool prefix `mcp__plugin_ai-engineering-system_<server>__<tool>`, not the bare server name, since that is how Claude Code exposes plugin-provided MCP tools under `--plugin-dir`.
+
+Update 2026-11-23: a server-level grant can be narrowed per tool. `automation` keeps the n8n server in
+`tools:` but withholds `n8n_delete_workflow` and `n8n_manage_credentials` through `disallowedTools`,
+which was verified to remove exactly the named tools. The same pattern applies to any future boundary
+finer than a whole server.

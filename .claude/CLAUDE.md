@@ -15,6 +15,7 @@ This repository IS a Claude Code plugin. The root is the plugin root.
 - RAG lint: `cd rag && npm run lint`
 - Evals (costs tokens): `claude plugin eval . --scaffold --trust-plugin --ablation none --threshold 0.8 --allow-tools Bash Write Edit --no-publish --max-cost-usd 20`
 - Dev loop in another project: `claude --plugin-dir /path/to/ai-engineering-system`
+- After editing `docs/decisions/` or `skills/rules/`: `cd rag && npm run ingest:standards` (the RAG serves the old text until then)
 
 ## Rules
 - Artifacts are written in English.

@@ -1,7 +1,10 @@
 # AI Engineering System — v0.1 Design
 
 **Date:** 2026-09-22
-**Status:** Approved for planning
+**Status:** Approved for planning (2026-09-22). Kept as written: this is the design, not the as-built
+state. Where the implementation diverged (the tester hooks are plugin-wide and gated on `agent_type`,
+hook coverage and secret patterns grew, CI runs on push and PR, eval flags changed), `README.md`,
+`docs/decisions/` and `CHANGELOG.md` are current.
 **Repository:** `ai-engineering-system/` (this repo is the plugin)
 
 ## 1. Purpose

@@ -34,7 +34,8 @@ Export in your shell (never commit these):
 export N8N_API_KEY=...            # n8n MCP
 export N8N_API_URL=http://localhost:5678
 ```
-See `.env.example` for the RAG variables and `rag/README.md` for bringing the knowledge base up.
+The RAG reads `rag/.env` (copy `rag/.env.example`); the root `.env.example` only lists optional
+shell overrides. See `rag/README.md` for bringing the knowledge base up and the precedence rules.
 
 Knowledge base (optional but recommended):
 ```bash
@@ -44,6 +45,10 @@ Then in each project: `/setup-project` once, `/ingest-knowledge` whenever docs o
 
 `n8n-mcp` starts in every session even when `N8N_API_KEY` is unset (`.mcp.json` defaults it to
 empty); the n8n management tools then fail until the key is exported.
+
+Do not configure servers named `engineering-rag` or `n8n-mcp` at local or user scope while the
+plugin is loaded. A same-named server there is exposed as `mcp__<server>__*`, the plugin's copy
+does not start, and the agents, whose grants use the plugin prefix, run without that server.
 
 MCP tool calls made by subagents (like `research`'s RAG lookups) need permission like any other
 tool. Interactively, Claude Code prompts once the first time and you can choose "always allow".
@@ -95,7 +100,9 @@ Claude Code refuses to write `.claude/settings.json` in non-interactive (`-p`) m
 claude plugin validate . --strict
 bash hooks/tests/run.sh
 shellcheck hooks/scripts/*.sh hooks/tests/run.sh evals/*/scaffold.sh
-claude plugin eval . --scaffold --trust-plugin --ablation none --threshold 0.8 --allow-tools Bash Write Edit   # costs tokens
+cd rag && npm run lint && npm test
+claude plugin eval . --scaffold --trust-plugin --ablation none --threshold 0.8 --allow-tools Bash Write Edit --no-publish --max-cost-usd 20   # costs tokens
+cd rag && npm run ingest:standards   # after editing docs/decisions/ or skills/rules/
 ```
 
 Granting Bash in the eval sandbox requires `bubblewrap` and `socat`

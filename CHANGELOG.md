@@ -29,6 +29,14 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
   from Claude Code 2.1.330.
 
 ### Changed
+- Docs: `docs/PENDING.md` rewritten to what is still open after the 2026-11-23 reviews; ADR-003,
+  ADR-006 and ADR-007 carry dated updates for the per-tool withholding, the connect-before-probe
+  start, `migrate:down`, `rag/.env`, the fail-closed guards and the timing budget; the design spec
+  and the two plans state that they are the 2026-09-22 design and executed plans, not the as-built
+  state; `docs/README.md` indexes the directory; the root README points at `rag/.env.example`,
+  warns about same-named MCP servers at local or user scope, and shows the current dev commands.
+  The 0.1.0 "Fixed" entries, corrections to code that was never released, are folded into
+  "Added".
 - Evals: the CI `evals` job fails fast with an explicit error when the `ANTHROPIC_API_KEY`
   secret is missing (it had been failing every Monday since 2026-09-28 with a one-second
   "Not logged in" run), pins `--judge-model claude-haiku-5-5` next to `--model`, caps the run at
@@ -157,9 +165,7 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 - RAG: Postgres + pgvector + Ollama bge-m3 compose stack, migrations, chunker, incremental
   ingest CLI, doctor, read-only MCP server (`search_knowledge`, `list_sources`, `get_source`,
   `rag_status`), the `/ingest-knowledge` workflow skill, ADR-006, and a `rag` CI job.
-
-### Fixed
-- `block-destructive.sh` and `restrict-tester-bash.sh` now honour git global flags before the
+- Hooks honour git global flags before the
   subcommand, so `git -C /repo push -f origin main`, `git --git-dir=... push -f`,
   `git -c k=v push --force`, `git --no-pager -C x reset --hard` and `git -C x stash` are denied.
 - `block-destructive.sh` strips every quote from an `rm` target, so spliced forms

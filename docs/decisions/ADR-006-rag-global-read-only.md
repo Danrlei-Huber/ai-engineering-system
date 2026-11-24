@@ -6,7 +6,13 @@ Status: Accepted (2026-09-22)
 Agents need architecture decisions, standards and project docs at hand without re-reading whole repositories. Letting agents write to shared memory creates a feedback loop where one agent's belief becomes another's "established decision". Embedding models with different dimensions cannot share an index.
 
 ## Decision
-One PostgreSQL + pgvector database, run from `rag/docker-compose.yml`, partitioned by `project` (scope, `_global` for plugin content) and `collection` (`docs | decisions | standards | external`). The MCP server `engineering-rag` exposes only read tools (`search_knowledge`, `list_sources`, `get_source`, `rag_status`). Ingestion happens only through the CLI (`/ingest-knowledge` wraps it) and is incremental by sha256, pruning only with `--prune`. Only `research` and `architect` hold the RAG tools. Embedding contract for v0.1: Ollama `bge-m3`, 1024 dimensions, cosine distance; the server refuses to start on a dimension mismatch, but keeps running when Postgres or Ollama are merely unreachable.
+One PostgreSQL + pgvector database, run from `rag/docker-compose.yml`, partitioned by `project` (scope, `_global` for plugin content) and `collection` (`docs | decisions | standards | external`). The MCP server `engineering-rag` exposes only read tools (`search_knowledge`, `list_sources`, `get_source`, `rag_status`). Ingestion happens only through the CLI (`/ingest-knowledge` wraps it) and is incremental by sha256, pruning only with `--prune`. Only `research` and `architect` hold the RAG tools. Embedding contract for v0.1: Ollama `bge-m3`, 1024 dimensions, cosine distance; the server exits on a dimension mismatch, but keeps running when Postgres or Ollama are merely unreachable.
 
 ## Consequences
 Knowledge has a human-controlled origin. Changing the embedding model means a new migration and a full re-ingest, and is itself an ADR. Hybrid search, reranking and source-code ingestion are deferred until evals show a need. The RAG is a degradable dependency: research degrades to codebase-only and says so (`rag_available: false`).
+
+Update 2026-11-23: the server connects its stdio transport before probing the embedding contract, so a
+cold Ollama no longer times out the MCP handshake; a mismatch still exits with code 1 once detected.
+Migrations ship a `.down.sql` and `npm run migrate:down` reverts the last applied one, matching the
+architecture rule on reversible migrations. The CLIs and the server read `rag/.env`, the same file
+docker compose reads, so one change of port or password moves everything.

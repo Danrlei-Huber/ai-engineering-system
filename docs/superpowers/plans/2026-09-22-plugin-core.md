@@ -2,6 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Status:** executed and merged into `main` on 2026-09-22 (released as v0.1.0). The checkboxes below
+> were tracked in the git-ignored SDD ledger, not in this file, so they stay unchecked here.
+
 **Goal:** Build the `ai-engineering-system` Claude Code plugin: manifest, six role agents, five workflow skills, three rule skills, five hand-off contracts, four guardrail hooks with tests, seven ADRs, six plugin evals and CI.
 
 **Architecture:** The repository root is the plugin. Agents are flat Markdown files with least-privilege tool sets. Workflow skills run in the main session and dispatch agents in a fixed order, passing only contract objects between them. Hooks are bash + jq scripts that deny dangerous tool calls deterministically. Evals prove the pipeline stops at the human gate and that the hooks block what they must.
