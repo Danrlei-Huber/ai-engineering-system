@@ -1,8 +1,8 @@
 # Pending items
 
-Status snapshot: `main` at `9470e6c` (2026-11-24). Since v0.1.0 the four modules (`rag/`, `hooks/`,
+Status snapshot: v0.2.0 (2026-11-24). Between v0.1.0 and v0.2.0 the four modules (`rag/`, `hooks/`,
 `agents/`+`skills/`+`contracts/`, `evals/`) went through a review each; everything those reviews
-fixed is in `CHANGELOG.md` under Unreleased and is not repeated here. This file lists only what is
+fixed is in `CHANGELOG.md` under 0.2.0 and is not repeated here. This file lists only what is
 still open, grouped by who can act on it.
 
 ## 1. Actions only the repository owner can take
@@ -25,8 +25,6 @@ still open, grouped by who can act on it.
 - [ ] Re-index the plugin standards: `cd rag && npm run ingest:standards`. `ADR-007` and
   `skills/rules/testing/SKILL.md` changed after the 2026-09-23 ingestion, so the RAG still serves the
   old testing rule. Needs the model above.
-- [ ] Cut a release: Unreleased holds every review fix of 2026-11-23; bump `plugin.json` and
-  `marketplace.json`, move the section to `## [0.2.0]`, tag.
 
 ## 2. Verifications to perform once
 

@@ -4,6 +4,10 @@ All notable changes to this plugin are documented here. Format: Keep a Changelog
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.2.0] - 2026-11-24
+
 ### Added
 - Contracts: `implementation-result` has a `status: done | blocked` field; on `blocked` the
   `/implement-feature` orchestrator skips the tester and the reviewer and hands the plan and the
